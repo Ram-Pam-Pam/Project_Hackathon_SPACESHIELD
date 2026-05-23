@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { ANALYSIS_REPORT_TEXT } from '../data/stalowaWolaData';
-import { Search, ShieldAlert, Lightbulb, ArrowRight, Sparkles, Send, BrainCircuit, RefreshCw, Layers } from 'lucide-react';
+import { Search, ShieldAlert, Lightbulb, ArrowRight, Sparkles, Send, BrainCircuit, RefreshCw } from 'lucide-react';
 
 interface AnalyticalReportViewProps {
   onGoToDashboard: () => void;
@@ -84,7 +83,6 @@ export default function AnalyticalReportView({ onGoToDashboard }: AnalyticalRepo
     if (!userPrompt.trim()) return;
     setIsGenerating(true);
 
-    // Simulate high-fidelity responsive stream from a custom LLM model about Stalowa Wola transit
     setTimeout(() => {
       setCustomResponse(
         `[Generowanie Dynamicznej Analizy Przestrzennej AI dla Stalowej Woli]\n` +
@@ -99,74 +97,63 @@ export default function AnalyticalReportView({ onGoToDashboard }: AnalyticalRepo
 
   const currentContent = contentMap[selectedPreset];
 
+  const presetButtons = [
+    { id: 'default' as const, label: 'Korytarz Śródmieście' },
+    { id: 'hsw' as const, label: 'Strefa HSW (Huta)' },
+    { id: 'rozwadow' as const, label: 'Dzielnica Rozwadów' },
+  ];
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-10" id="view-3-analytical-report text-slate-200">
-      {/* 2. Top Grand Gradient Header (Grand, wyraźny tytuł Gradientowy) */}
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-10" id="view-3-analytical-report">
+      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6 dark:border-slate-800">
         <div>
-          <span className="text-xs font-extrabold uppercase tracking-widest text-emerald-500">
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-500">
             System Analizy Przestrzennej
           </span>
-          <h1 className="mt-1 text-4.5xl font-extrabold tracking-tight bg-gradient-to-r from-slate-950 via-emerald-800 to-emerald-900 bg-clip-text text-transparent dark:from-white dark:via-emerald-400 dark:to-teal-300">
-            Szczegółowa Analiza Geolokalizacyjna
+          <h1 className="mt-2 text-4xl font-extrabold tracking-tight">
+            <span className="text-gradient-primary">Szczegółowa Analiza</span>
+            <br />
+            <span className="text-slate-900 dark:text-white">Geolokalizacyjna</span>
           </h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-2xl font-medium leading-relaxed">
+          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 max-w-2xl font-medium leading-relaxed">
             Przeglądaj zintegrowane raporty przestrzenne wygenerowane przez silnik AI we współpracy z bazami danych BDOT10k i statystykami MZK Stalowa Wola.
           </p>
         </div>
 
         {/* Dynamic Preset Toggler */}
-        <div className="flex bg-slate-100 p-1.5 rounded-xl dark:bg-slate-900 self-start md:self-auto shrink-0 border border-slate-200/50 dark:border-white/10">
-          <button
-            id="preset-default"
-            onClick={() => { setSelectedPreset('default'); setCustomResponse(null); }}
-            className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all ${
-              selectedPreset === 'default'
-                ? 'bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950'
-                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-            }`}
-          >
-            Korytarz Śródmieście
-          </button>
-          <button
-            id="preset-hsw"
-            onClick={() => { setSelectedPreset('hsw'); setCustomResponse(null); }}
-            className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all ${
-              selectedPreset === 'hsw'
-                ? 'bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950'
-                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-            }`}
-          >
-            Strefa HSW (Huta)
-          </button>
-          <button
-            id="preset-rozwadow"
-            onClick={() => { setSelectedPreset('rozwadow'); setCustomResponse(null); }}
-            className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all ${
-              selectedPreset === 'rozwadow'
-                ? 'bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950'
-                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-            }`}
-          >
-            Dzielnica Rozwadów
-          </button>
+        <div className="flex bg-slate-100 p-1 rounded-xl dark:bg-slate-900 self-start md:self-auto shrink-0 border border-slate-200/50 dark:border-white/10">
+          {presetButtons.map((preset) => (
+            <button
+              key={preset.id}
+              id={`preset-${preset.id}`}
+              onClick={() => { setSelectedPreset(preset.id); setCustomResponse(null); }}
+              className={`rounded-lg px-3.5 py-2 text-[11px] font-bold transition-all duration-200 ${
+                selectedPreset === preset.id
+                  ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
+                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              {preset.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* 3. The 3-Card Grid (Siatka 3 Kart: Przyczyny, Problem, Rozwiązanie AI) */}
+      {/* 3-Card Grid: Przyczyny, Problem, Rozwiązanie AI */}
       <div className="grid gap-6 md:grid-cols-3">
-        {/* Card 1: Przyczyny (Trend/Magnifier icon) */}
-        <div className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-xs transition-style duration-300 hover:border-slate-350 dark:border-white/10 dark:bg-slate-950">
+        {/* Card 1: Przyczyny */}
+        <div className="group rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300 hover:border-slate-300 dark:border-white/10 dark:bg-slate-900 dark:hover:border-white/20 card-hover opacity-0 animate-fade-in-up stagger-1">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest dark:text-slate-500">
+            <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest dark:text-slate-500">
               {currentContent.causes.metric}
             </span>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300 group-hover:bg-emerald-500/10 group-hover:text-emerald-500 transition-colors">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 group-hover:bg-emerald-500/10 group-hover:text-emerald-500 transition-colors">
               <Search className="h-5 w-5" />
             </div>
           </div>
 
-          <h3 className="mt-4 text-lg font-bold text-slate-990 dark:text-white">
+          <h3 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">
             {currentContent.causes.title}
           </h3>
 
@@ -178,7 +165,7 @@ export default function AnalyticalReportView({ onGoToDashboard }: AnalyticalRepo
             <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
               Kluczowe wektory przyczyn:
             </span>
-            <ul className="space-y-1.5 text-xs font-medium text-slate-705 dark:text-slate-300">
+            <ul className="space-y-1.5 text-xs font-medium text-slate-600 dark:text-slate-300">
               {currentContent.causes.factors.map((factor, idx) => (
                 <li key={idx} className="flex items-start">
                   <span className="mr-1.5 text-emerald-500">▪</span> {factor}
@@ -188,18 +175,18 @@ export default function AnalyticalReportView({ onGoToDashboard }: AnalyticalRepo
           </div>
         </div>
 
-        {/* Card 2: Problem (Warning/Shield icon) */}
-        <div className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-xs transition-style duration-300 hover:border-slate-350 dark:border-white/10 dark:bg-slate-950">
+        {/* Card 2: Problem */}
+        <div className="group rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300 hover:border-slate-300 dark:border-white/10 dark:bg-slate-900 dark:hover:border-white/20 card-hover opacity-0 animate-fade-in-up stagger-2">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest dark:text-slate-500">
+            <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest dark:text-slate-500">
               {currentContent.problem.metric}
             </span>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300 group-hover:bg-rose-500/10 group-hover:text-rose-500 transition-colors">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 group-hover:bg-rose-500/10 group-hover:text-rose-500 transition-colors">
               <ShieldAlert className="h-5 w-5" />
             </div>
           </div>
 
-          <h3 className="mt-4 text-lg font-bold text-slate-990 dark:text-white">
+          <h3 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">
             {currentContent.problem.title}
           </h3>
 
@@ -211,7 +198,7 @@ export default function AnalyticalReportView({ onGoToDashboard }: AnalyticalRepo
             <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
               Wykryte skutki sieciowe:
             </span>
-            <ul className="space-y-1.5 text-xs font-medium text-slate-705 dark:text-slate-300">
+            <ul className="space-y-1.5 text-xs font-medium text-slate-600 dark:text-slate-300">
               {currentContent.problem.factors.map((factor, idx) => (
                 <li key={idx} className="flex items-start">
                   <span className="mr-1.5 text-rose-500">▪</span> {factor}
@@ -221,31 +208,31 @@ export default function AnalyticalReportView({ onGoToDashboard }: AnalyticalRepo
           </div>
         </div>
 
-        {/* Card 3: AI Solution (Visually distinguished with emerald glow and neon border details) */}
-        <div className="relative group rounded-2xl border-2 border-emerald-500 bg-white p-6 shadow-lg shadow-emerald-100/30 transition-style duration-300 dark:border-emerald-500 dark:bg-slate-950">
+        {/* Card 3: AI Solution (visually distinguished with emerald glow) */}
+        <div className="relative group rounded-2xl border-2 border-emerald-500/50 bg-white p-6 transition-all duration-300 dark:border-emerald-500/40 dark:bg-slate-900 card-hover opacity-0 animate-fade-in-up stagger-3">
           {/* Subtle neon glow back effect */}
-          <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-teal-500/10 opacity-0 blur-lg transition duration-500 group-hover:opacity-100 pointer-events-none" />
+          <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-cyan-500/10 opacity-0 blur-lg transition duration-500 group-hover:opacity-100 pointer-events-none" />
 
           <div className="relative z-10">
             <div className="flex items-center justify-between">
-              <div className="inline-flex items-center space-x-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-[9px] font-bold uppercase text-emerald-400">
-                <Sparkles className="h-3 w-3 text-emerald-400 mr-0.5 animate-pulse" /> Model AI v4.0
+              <div className="inline-flex items-center space-x-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1 text-[9px] font-bold uppercase text-emerald-500 dark:text-emerald-400">
+                <Sparkles className="h-3 w-3 animate-pulse mr-0.5" /> Model AI v4.0
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/20">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/25">
                 <Lightbulb className="h-5 w-5" />
               </div>
             </div>
 
-            <h3 className="mt-4 text-lg font-bold text-slate-990 dark:text-white flex items-center">
+            <h3 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">
               {currentContent.solution.title}
             </h3>
 
-            <p className="mt-3 text-sm leading-relaxed text-slate-705 font-medium dark:text-slate-300">
+            <p className="mt-3 text-sm leading-relaxed text-slate-600 font-medium dark:text-slate-300">
               {currentContent.solution.content}
             </p>
 
-            <div className="mt-5 rounded-lg bg-slate-50 p-3 dark:bg-slate-900/60 border border-slate-200/50 dark:border-white/5">
-              <span className="block text-[9px] font-bold uppercase text-slate-450">
+            <div className="mt-5 rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-500/15">
+              <span className="block text-[9px] font-bold uppercase text-slate-500 dark:text-slate-400">
                 Szacowany wpływ wdrożenia:
               </span>
               <span className="font-semibold text-xs text-emerald-600 dark:text-emerald-400">
@@ -269,16 +256,16 @@ export default function AnalyticalReportView({ onGoToDashboard }: AnalyticalRepo
         </div>
       </div>
 
-      {/* 4. Secondary interactive LLM playground simulator */}
-      <div className="rounded-2xl border border-slate-250 bg-white p-6 dark:border-white/10 dark:bg-slate-950 transition-all duration-300">
+      {/* LLM Playground simulator */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-slate-900 transition-all duration-300 opacity-0 animate-fade-in-up stagger-4">
         <div className="flex items-center space-x-2.5 mb-3">
           <BrainCircuit className="h-5 w-5 text-emerald-500" />
-          <h3 className="text-base font-bold text-slate-950 dark:text-white">
-            Generuj dedykowaną rekomendację omijania zatorów (Symulacja AI)
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            Generuj dedykowaną rekomendację (Symulacja AI)
           </h3>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-3xl font-medium">
-          Chcesz sprawdzić inną ulicę lub korytarz w Stalowej Woli? Wpisz zapytanie (np. "optymalizacja linii nr 1 do kościoła Opatrzności Bożej" lub "buspasy Al. Jana Pawła II"), a nasz geolokalizacyjny algorytm przetwarza macierze w czasie rzeczywistym.
+          Wpisz zapytanie przestrzenne (np. "optymalizacja linii nr 1" lub "buspasy Al. Jana Pawła II"), a nasz algorytm przetworzy macierze w czasie rzeczywistym.
         </p>
 
         <form onSubmit={handlePromptSubmit} className="flex flex-col sm:flex-row gap-2">
@@ -288,13 +275,13 @@ export default function AnalyticalReportView({ onGoToDashboard }: AnalyticalRepo
               value={userPrompt}
               onChange={(e) => setUserPrompt(e.target.value)}
               placeholder="Wprowadź zapytanie przestrzenne..."
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-800 shadow-inner outline-none transition-all focus:border-emerald-500 dark:border-white/10 dark:bg-slate-900 dark:text-slate-200"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-800 outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-slate-800 dark:text-slate-200"
             />
             {userPrompt && (
               <button
                 type="button"
                 onClick={() => setUserPrompt('')}
-                className="absolute right-3.5 top-3.5 text-xs font-bold text-emerald-500 hover:text-emerald-400"
+                className="absolute right-3.5 top-3.5 text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors"
               >
                 wyczyść
               </button>
@@ -303,7 +290,7 @@ export default function AnalyticalReportView({ onGoToDashboard }: AnalyticalRepo
           <button
             type="submit"
             disabled={isGenerating}
-            className="rounded-xl bg-slate-950 hover:bg-slate-800 dark:bg-white dark:text-slate-950 px-6 py-3 text-xs font-bold text-white shadow-sm transition-all flex items-center justify-center space-x-1.5 shrink-0"
+            className="rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 px-6 py-3 text-xs font-bold text-white shadow-sm transition-all flex items-center justify-center space-x-1.5 shrink-0 active:scale-[0.98]"
           >
             {isGenerating ? (
               <>
@@ -312,7 +299,7 @@ export default function AnalyticalReportView({ onGoToDashboard }: AnalyticalRepo
               </>
             ) : (
               <>
-                <Send className="h-3.5 w-3.5 text-emerald-500" />
+                <Send className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-600" />
                 <span>Analizuj</span>
               </>
             )}
@@ -320,7 +307,7 @@ export default function AnalyticalReportView({ onGoToDashboard }: AnalyticalRepo
         </form>
 
         {customResponse && (
-          <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 font-mono text-[11.5px] leading-relaxed text-slate-700 dark:bg-slate-900/40 dark:text-slate-350 overflow-x-auto">
+          <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 font-mono text-[11.5px] leading-relaxed text-slate-700 dark:bg-emerald-950/20 dark:text-slate-300 overflow-x-auto animate-fade-in">
             <div className="flex items-center space-x-1.5 text-emerald-600 dark:text-emerald-400 font-sans font-bold mb-2">
               <Sparkles className="h-3.5 w-3.5 animate-pulse text-emerald-500" />
               <span>Wynik Przetworzenia Geolokalizatora:</span>
@@ -332,18 +319,20 @@ export default function AnalyticalReportView({ onGoToDashboard }: AnalyticalRepo
         )}
       </div>
 
-      {/* 5. Clear Call to Action (CTA) Button (CTA z tekstem "Zobacz dashboard" i strzałką w prawo) */}
-      <div className="flex flex-col items-center justify-center border-t border-slate-200 pt-8 dark:border-slate-800">
-        <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3.5">
+      {/* Clear Call to Action (CTA) Button */}
+      <div className="flex flex-col items-center justify-center border-t border-slate-200 pt-10 dark:border-slate-800 opacity-0 animate-fade-in-up stagger-5">
+        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">
           Następny krok badawczy
         </span>
         <button
           id="btn-see-dashboard"
           onClick={onGoToDashboard}
-          className="group relative flex items-center space-x-3 rounded-2xl bg-slate-950 px-8 py-4 text-sm font-bold text-white shadow-xl hover:bg-slate-900 active:scale-99 transition-all dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+          className="group relative flex items-center space-x-3 rounded-2xl bg-slate-950 px-10 py-4 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:bg-slate-900 hover:shadow-2xl active:scale-[0.97] dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
         >
           <span>Zobacz dashboard analityczny</span>
-          <ArrowRight className="h-4.5 w-4.5 transition-transform duration-300 group-hover:translate-x-1.5 text-emerald-500 dark:text-emerald-600" />
+          <ArrowRight className="h-5 w-5 text-emerald-500 dark:text-emerald-600 animate-arrow-bounce" />
+          {/* Glow ring on hover */}
+          <div className="absolute -inset-1 rounded-2xl bg-emerald-500/10 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 pointer-events-none" />
         </button>
       </div>
     </div>

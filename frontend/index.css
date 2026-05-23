@@ -13,18 +13,31 @@
     font-family: var(--font-sans);
     transition: background-color 0.3s ease, color 0.3s ease;
   }
+
+  /* Smooth scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.5);
+  }
 }
 
-/* Custom smooth pulsing animation for the red hotspot sensors on our maps */
+/* ─── Pulse Animations ────────────────────────────────────────────── */
 @keyframes custom-pulse {
-
-  0%,
-  100% {
+  0%, 100% {
     transform: scale(1);
     opacity: 1;
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
   }
-
   50% {
     transform: scale(1.15);
     opacity: 0.9;
@@ -32,15 +45,11 @@
   }
 }
 
-/* Custom smooth pulsing for orange indicators */
 @keyframes orange-pulse {
-
-  0%,
-  100% {
+  0%, 100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.5);
   }
-
   50% {
     transform: scale(1.08);
     box-shadow: 0 0 0 6px rgba(249, 115, 22, 0);
@@ -55,19 +64,19 @@
   animation: orange-pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Beautiful grid background styling for our map mockup */
+/* ─── Map Grid Background ─────────────────────────────────────────── */
 .map-grid-bg {
   background-size: 40px 40px;
   background-image: linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+                    linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
 }
 
 .dark .map-grid-bg {
   background-image: linear-gradient(to right, rgba(51, 65, 85, 0.15) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(51, 65, 85, 0.15) 1px, transparent 1px);
+                    linear-gradient(to bottom, rgba(51, 65, 85, 0.15) 1px, transparent 1px);
 }
 
-/* High Density Dot Pattern theme */
+/* ─── Dot Grid Patterns ───────────────────────────────────────────── */
 .high-density-dots {
   background-image: radial-gradient(rgba(148, 163, 184, 0.15) 0.8px, transparent 0.8px);
   background-size: 20px 20px;
@@ -78,25 +87,151 @@
   background-size: 20px 20px;
 }
 
-/* Premium High Density specific effects */
+/* ─── Neon Glow Effects ───────────────────────────────────────────── */
 .neon-glow-emerald {
   box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
 }
-
 .neon-glow-rose {
   box-shadow: 0 0 20px rgba(244, 63, 94, 0.45);
 }
-
 .neon-glow-amber {
   box-shadow: 0 0 15px rgba(245, 158, 11, 0.35);
+}
+
+/* ─── Glassmorphism Panels ────────────────────────────────────────── */
+.glass-panel {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 .glass-panel-rich {
   backdrop-filter: blur(16px);
   background-color: rgba(15, 23, 42, 0.8);
 }
-
 .light .glass-panel-rich {
   backdrop-filter: blur(16px);
   background-color: rgba(255, 255, 255, 0.85);
+}
+
+/* ─── View Transition Animations ──────────────────────────────────── */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.6); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* ─── Staggered Card Animations ───────────────────────────────────── */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.10s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.20s; }
+.stagger-5 { animation-delay: 0.25s; }
+
+/* ─── Premium Card Hover Effect ───────────────────────────────────── */
+.card-hover {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.3s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.15);
+}
+.dark .card-hover:hover {
+  box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* ─── CTA Arrow Bounce ────────────────────────────────────────────── */
+@keyframes arrow-bounce {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
+}
+.animate-arrow-bounce {
+  animation: arrow-bounce 1.5s ease-in-out infinite;
+}
+
+/* ─── Gradient Text Utility ───────────────────────────────────────── */
+.text-gradient-primary {
+  background: linear-gradient(135deg, #10b981, #06b6d4, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark .text-gradient-primary {
+  background: linear-gradient(135deg, #34d399, #22d3ee, #60a5fa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Subtle Background Noise for Premium Feel ────────────────────── */
+.noise-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.02;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }

@@ -1,0 +1,54 @@
+import React, { useState, useEffect } from 'react';
+import DeckGL from '@deck.gl/react';
+import { H3HexagonLayer } from '@deck.gl/geo-layers';
+import { csv } from 'd3-fetch'; // do łatwego wczytywania plików CSV
+
+const INITIAL_VIEW_STATE = {
+    longitude: 19.14, // Dopasuj do centrum swoich danych (Polska)
+    latitude: 51.91,
+    zoom: 6,
+    pitch: 40, // Kąt nachylenia (fajnie widać populację w 3D)
+    bearing: 0
+};
+
+export default function PopulationMap() {
+    const [data, setData] = useState([]);
+
+    useEffect(() => {
+        // Wczytywanie pliku z folderu public
+        csv('/populacja_h31.csv').then(csvData => {
+            // Konwersja stringa "population" z CSV na liczby
+            const formattedData = csvData.map(d => ({
+                h3_index: d.h3_index,
+                population: parseFloat(d.population)
+            }));
+            setData(formattedData);
+        });
+    }, []);
+
+    const layer = new H3HexagonLayer({
+        id: 'h3-population-layer',
+        data,
+        pickable: true,
+        wireframe: false,
+        filled: true,
+        extruded: true,
+        elevationScale: 20,
+        getHexagon: d => d.h3_index,
+        // Przykładowa skala kolorów: od żółtego do czerwonego w zależności od populacji
+        getFillColor: d => [255, Math.max(0, 255 - (d.population / 2)), 0],
+        getElevation: d => d.population,
+    });
+
+    return (
+        <DeckGL
+      initialViewState= { INITIAL_VIEW_STATE }
+    controller = { true}
+    layers = { [layer]}
+    getTooltip = {({ object }) => object && `Populacja: ${Math.round(object.population)}`
+}
+    >
+    {/* Tutaj zazwyczaj znajduje się Twoja mapa bazowa, np. <StaticMap mapStyle="..." /> */ }
+    </DeckGL>
+  );
+}
