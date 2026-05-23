@@ -108,6 +108,7 @@ export default function LayerAnalysisView({
             onStopClick={() => {}}
             hoveredStopId={hoveredStopId}
             setHoveredStopId={setHoveredStopId}
+            isFlat={true}
           />
 
           {/* Floating Panel showing Layer Options */}
