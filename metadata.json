@@ -1,0 +1,6 @@
+{
+  "name": "Analiza Przestrzenna Stalowa Wola",
+  "description": "System analizy przestrzennej i natężenia ruchu w Stalowej Woli z obsługą warstw BDOT10k, raportami analitycznymi oraz dashboardem bento.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
