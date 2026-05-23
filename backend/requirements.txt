@@ -1,7 +1,4 @@
 fastapi
 uvicorn
-<<<<<<< HEAD
 httpx
 python-dotenv
-=======
->>>>>>> 4c8bc73dc247b0d86decc1003f65634420c63298
