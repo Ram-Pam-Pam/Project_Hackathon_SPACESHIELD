@@ -42,7 +42,7 @@ export default function Navbar({ activePage, setActivePage, theme, setTheme }: N
         </div>
 
         {/* Navigation Tabs with active indicator pill */}
-        <div className="flex items-center bg-slate-100/80 dark:bg-slate-900/80 rounded-xl p-1 border border-slate-200/50 dark:border-white/5">
+        <div id="navbar-tabs-container" className="flex items-center bg-slate-100/80 dark:bg-slate-900/80 rounded-xl p-1 border border-slate-200/50 dark:border-white/5">
           {menuItems.map((item, idx) => {
             const IconComponent = item.icon;
             const isActive = activePage === item.id;

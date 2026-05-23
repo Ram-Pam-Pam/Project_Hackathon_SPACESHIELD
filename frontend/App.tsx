@@ -6,6 +6,7 @@ import MapMainView from './components/MapMainView';
 import LayerAnalysisView from './components/LayerAnalysisView';
 import AnalyticalReportView from './components/AnalyticalReportView';
 import DashboardView from './components/DashboardView';
+import OnboardingTour from './components/OnboardingTour';
 import { Sparkles } from 'lucide-react';
 
 export default function App() {
@@ -70,6 +71,7 @@ export default function App() {
               transitionToLayers={() => navigateTo('layers')}
               hoveredStopId={hoveredStopId}
               setHoveredStopId={setHoveredStopId}
+              selectedStop={selectedStop}
             />
           </div>
         )}
@@ -81,6 +83,8 @@ export default function App() {
               onTabSelection={handleTabSelect}
               hoveredStopId={hoveredStopId}
               setHoveredStopId={setHoveredStopId}
+              selectedStop={selectedStop}
+              onStopSelect={handleStopSelect}
             />
           </div>
         )}
@@ -104,6 +108,9 @@ export default function App() {
           GeoAnalytica · Projekt badawczy Stalowej Woli • React + Tailwind 4 + Recharts + MapLibre GL
         </p>
       </footer>
+
+      {/* Interactive onboarding guide */}
+      <OnboardingTour activePage={activePage} setActivePage={navigateTo} />
     </div>
   );
 }

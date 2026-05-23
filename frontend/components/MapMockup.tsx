@@ -10,6 +10,7 @@ interface MapMockupProps {
   hoveredStopId: string | null;
   setHoveredStopId: (id: string | null) => void;
   isFlat?: boolean;
+  selectedStop?: Stop | null;
 }
 
 // Precise geographic coordinates (latitude, longitude) of locations in Stalowa Wola
@@ -132,6 +133,7 @@ export default function MapMockup({
   hoveredStopId,
   setHoveredStopId,
   isFlat = false,
+  selectedStop = null,
 }: MapMockupProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
@@ -162,11 +164,15 @@ export default function MapMockup({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
+    const initialCoords = selectedStop && STALOWA_WOLA_GPS[selectedStop.id]
+      ? STALOWA_WOLA_GPS[selectedStop.id]
+      : { lat: 50.570, lng: 22.053 };
+
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: getMapStyle(isDark, activeLayer),
-      center: [22.053, 50.570],
-      zoom: 14.5,
+      center: [initialCoords.lng, initialCoords.lat],
+      zoom: selectedStop ? 16 : 14.5,
       pitch: isFlat ? 0 : 60,
       bearing: isFlat ? 0 : -15,
       attributionControl: false,
@@ -411,6 +417,7 @@ export default function MapMockup({
 
       // Create a gorgeous custom HTML/CSS element for the map node
       const el = document.createElement('div');
+      el.id = `map-stop-marker-${stop.id}`;
       el.className = 'relative flex items-center justify-center cursor-pointer';
       el.style.width = '52px';
       el.style.height = '52px';
@@ -452,7 +459,61 @@ export default function MapMockup({
       el.addEventListener('mouseleave', () => setHoveredStopId(null));
       el.addEventListener('click', (e) => {
         e.stopPropagation();
-        onStopClick(stop);
+        
+        // Remove any open popups
+        const popups = document.querySelectorAll('.maplibregl-popup');
+        popups.forEach((p) => p.remove());
+
+        const popupNode = document.createElement('div');
+        popupNode.className = 'p-4 rounded-2xl bg-slate-900/95 dark:bg-slate-950/95 text-white border border-slate-700/50 shadow-2xl backdrop-blur-md min-w-[260px] max-w-[300px] animate-fade-in font-sans';
+        popupNode.innerHTML = `
+          <div class="border-b border-slate-800 pb-2.5 mb-3 flex items-start justify-between">
+            <div>
+              <h4 class="font-extrabold text-sm text-emerald-400 leading-snug">${stop.name}</h4>
+              <p class="text-[10px] text-slate-400 font-semibold mt-0.5">${stop.street}</p>
+            </div>
+            <span class="text-[9px] font-mono font-bold bg-slate-800 px-2 py-0.5 rounded-full text-slate-300 ml-2 uppercase">${stop.intensity}</span>
+          </div>
+          <div class="space-y-2 text-[11px] mb-4">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400 font-medium">Pasażerowie:</span>
+              <span class="font-extrabold font-mono text-emerald-300">${stop.dailyPassengers.toLocaleString()} / dobę</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400 font-medium">Natężenie ruchu:</span>
+              <span class="font-extrabold font-mono text-rose-400">${stop.trafficScore}%</span>
+            </div>
+            <div class="flex justify-between items-start">
+              <span class="text-slate-400 font-medium shrink-0">Linie:</span>
+              <div class="flex flex-wrap gap-1 justify-end max-w-[140px]">
+                ${stop.lines.map(line => `<span class="bg-cyan-500/10 text-cyan-400 border border-cyan-500/25 px-1 py-0.5 rounded-md font-mono text-[9px] font-bold">${line}</span>`).join('')}
+              </div>
+            </div>
+          </div>
+          <button id="popup-btn-${stop.id}" class="w-full text-center bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-extrabold text-[11px] py-2 px-4 rounded-xl shadow-lg shadow-emerald-500/15 cursor-pointer transition-all active:scale-[0.97]">
+            Przejdź do analizy →
+          </button>
+        `;
+
+        const newPopup = new maplibregl.Popup({
+          closeButton: true,
+          closeOnClick: true,
+          maxWidth: '320px',
+          anchor: 'bottom',
+          offset: [0, -12]
+        })
+          .setLngLat([coords.lng, coords.lat])
+          .setDOMContent(popupNode)
+          .addTo(map);
+
+        // Bind click event for action button
+        const btn = popupNode.querySelector(`#popup-btn-${stop.id}`);
+        if (btn) {
+          btn.addEventListener('click', () => {
+            newPopup.remove();
+            onStopClick(stop);
+          });
+        }
       });
 
       const marker = new maplibregl.Marker({ element: el })
@@ -477,6 +538,21 @@ export default function MapMockup({
       });
     }
   }, [hoveredStopId]);
+
+  // Center map on selected stop when it changes
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !selectedStop) return;
+
+    const coords = STALOWA_WOLA_GPS[selectedStop.id];
+    if (coords) {
+      map.easeTo({
+        center: [coords.lng, coords.lat],
+        zoom: 16,
+        duration: 1200
+      });
+    }
+  }, [selectedStop]);
 
   // Sync active style mode smoothly
   useEffect(() => {

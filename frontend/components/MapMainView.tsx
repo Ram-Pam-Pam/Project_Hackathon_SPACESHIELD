@@ -9,6 +9,7 @@ interface MapMainViewProps {
   transitionToLayers: () => void;
   hoveredStopId: string | null;
   setHoveredStopId: (id: string | null) => void;
+  selectedStop?: Stop | null;
 }
 
 export default function MapMainView({
@@ -17,6 +18,7 @@ export default function MapMainView({
   transitionToLayers,
   hoveredStopId,
   setHoveredStopId,
+  selectedStop = null,
 }: MapMainViewProps) {
   const [activeLayer] = useState<'standard'>('standard');
 
@@ -73,7 +75,7 @@ export default function MapMainView({
           </div>
 
           {/* Quick guide card */}
-          <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-4 shadow-sm transition-all dark:border-slate-800/80 dark:bg-slate-900/50">
+          <div id="instructions-card" className="rounded-xl border border-slate-200/80 bg-slate-50 p-4 shadow-sm transition-all dark:border-slate-800/80 dark:bg-slate-900/50">
             <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
               Instrukcja nawigacji
             </h2>
@@ -100,7 +102,7 @@ export default function MapMainView({
 
           {/* Critical Spots Alert Block */}
           {highTrafficStops.length > 0 && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-4 dark:border-rose-900/40 dark:bg-rose-950/20 shadow-sm">
+            <div id="overloaded-stops-card" className="rounded-xl border border-rose-200 bg-rose-50/50 p-4 dark:border-rose-900/40 dark:bg-rose-950/20 shadow-sm">
               <div className="flex items-center space-x-2">
                 <AlertCircle className="h-4 w-4 text-rose-500" />
                 <h3 className="text-[10px] font-bold text-rose-900 dark:text-rose-400 uppercase tracking-widest">
@@ -165,6 +167,7 @@ export default function MapMainView({
             onStopClick={onStopSelect}
             hoveredStopId={hoveredStopId}
             setHoveredStopId={setHoveredStopId}
+            selectedStop={selectedStop}
           />
         </div>
       </div>

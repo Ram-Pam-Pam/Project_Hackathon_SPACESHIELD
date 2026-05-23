@@ -111,7 +111,7 @@ export default function AnalyticalReportView({ onGoToDashboard }: AnalyticalRepo
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-500">
             System Analizy Przestrzennej
           </span>
-          <h1 className="mt-2 text-4xl font-extrabold tracking-tight">
+          <h1 id="report-main-title" className="mt-2 text-4xl font-extrabold tracking-tight">
             <span className="text-gradient-primary">Szczegółowa Analiza</span>
             <br />
             <span className="text-slate-900 dark:text-white">Geolokalizacyjna</span>

@@ -9,6 +9,8 @@ interface LayerAnalysisViewProps {
   onTabSelection: (tabId: AnalysisTab) => void;
   hoveredStopId: string | null;
   setHoveredStopId: (id: string | null) => void;
+  selectedStop?: Stop | null;
+  onStopSelect?: (stop: Stop) => void;
 }
 
 export default function LayerAnalysisView({
@@ -16,6 +18,8 @@ export default function LayerAnalysisView({
   onTabSelection,
   hoveredStopId,
   setHoveredStopId,
+  selectedStop = null,
+  onStopSelect = () => {},
 }: LayerAnalysisViewProps) {
   const [activeLayerMode, setActiveLayerMode] = useState<'standard' | 'bdot10k' | 'satellite' | 'populacja_h3'>('bdot10k');
   const [activeTab, setActiveTab] = useState<AnalysisTab>('tab1');
@@ -73,7 +77,7 @@ export default function LayerAnalysisView({
           </div>
 
           {/* 5 Tabs Control Box */}
-          <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto">
+          <div id="operational-filters-tabs" className="flex flex-wrap items-center gap-1.5 overflow-x-auto">
             {ANALYSIS_TABS.map((tab) => {
               const isSelected = activeTab === tab.id;
               return (
@@ -105,10 +109,11 @@ export default function LayerAnalysisView({
           <MapMockup
             stops={stops}
             activeLayer={activeLayerMode}
-            onStopClick={() => {}}
+            onStopClick={onStopSelect}
             hoveredStopId={hoveredStopId}
             setHoveredStopId={setHoveredStopId}
             isFlat={true}
+            selectedStop={selectedStop}
           />
 
           {/* Floating Panel showing Layer Options */}

@@ -121,7 +121,7 @@ export default function DashboardView({ stops }: DashboardViewProps) {
       </div>
 
       {/* 1. Core KPIs Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div id="dashboard-kpis-container" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {KPI_STATS.map((stat, idx) => {
           const IconComp = kpiIcons[idx] || TrendingUp;
           return (
