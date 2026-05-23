@@ -1,5 +1,3 @@
-import { useEffect, useRef, useState } from 'react';
-import { Stop } from '../types';
 import { Navigation, ChevronRight, Layers, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -80,6 +78,9 @@ const getMapStyle = (isDark: boolean, activeLayer: 'standard' | 'bdot10k' | 'sat
   };
 };
 
+import { useEffect, useRef, useState } from 'react';
+import { Stop } from '../types';
+
 export default function MapMockup({
   stops,
   activeLayer,
@@ -93,6 +94,11 @@ export default function MapMockup({
 
   // Smart responsive observer to detect changes to dark/light theme trigger
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const isDarkRef = useRef(isDark);
+
+  useEffect(() => {
+    isDarkRef.current = isDark;
+  }, [isDark]);
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
@@ -110,7 +116,9 @@ export default function MapMockup({
       container: mapContainerRef.current,
       style: getMapStyle(isDark, activeLayer),
       center: [22.053, 50.570],
-      zoom: 12.8,
+      zoom: 14.5,
+      pitch: 60,
+      bearing: -15,
       attributionControl: false,
     });
 
@@ -173,7 +181,7 @@ export default function MapMockup({
           'line-cap': 'round'
         },
         paint: {
-          'line-color': isDark ? '#020617' : '#ffffff',
+          'line-color': isDarkRef.current ? '#020617' : '#ffffff',
           'line-width': 5,
           'line-opacity': 0.75
         }
@@ -194,6 +202,61 @@ export default function MapMockup({
           'line-opacity': 0.8
         }
       });
+
+      // Insert 3D buildings layer beneath any symbol layer
+      const layers = map.getStyle().layers;
+      let labelLayerId;
+      for (let i = 0; i < layers.length; i++) {
+        if (layers[i].type === 'symbol' && layers[i].layout && layers[i].layout['text-field']) {
+          labelLayerId = layers[i].id;
+          break;
+        }
+      }
+
+      map.addSource('openfreemap', {
+        url: `https://tiles.openfreemap.org/planet`,
+        type: 'vector',
+      });
+
+      map.addLayer(
+        {
+          'id': '3d-buildings',
+          'source': 'openfreemap',
+          'source-layer': 'building',
+          'type': 'fill-extrusion',
+          'minzoom': 13,
+          'filter': ['!=', ['get', 'hide_3d'], true],
+          'paint': {
+            'fill-extrusion-color': [
+              'interpolate',
+              ['linear'],
+              ['get', 'render_height'],
+              0,
+              'lightgray',
+              200,
+              'royalblue',
+              400,
+              'lightblue'
+            ],
+            'fill-extrusion-height': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              13,
+              0,
+              16,
+              ['get', 'render_height']
+            ],
+            'fill-extrusion-base': ['case',
+              ['>=', ['get', 'zoom'], 16],
+              ['get', 'render_min_height'],
+              0
+            ]
+          }
+        },
+        labelLayerId
+      );
+
     });
 
     return () => {
@@ -201,14 +264,6 @@ export default function MapMockup({
       mapInstanceRef.current = null;
     };
   }, []);
-
-  // Sync active style mode smoothly
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (map) {
-      map.setStyle(getMapStyle(isDark, activeLayer));
-    }
-  }, [activeLayer, isDark]);
 
   // Synchronize and update stop markers
   useEffect(() => {
@@ -246,17 +301,15 @@ export default function MapMockup({
       }
 
       if (isHovered) {
-        pulseRingClass = `absolute w-12 h-12 rounded-full animate-pulse opacity-80 ${
-          isHigh ? 'bg-rose-500/40' : isMedium ? 'bg-amber-500/35' : 'bg-emerald-400/30'
-        }`;
+        pulseRingClass = `absolute w-12 h-12 rounded-full animate-pulse opacity-80 ${isHigh ? 'bg-rose-500/40' : isMedium ? 'bg-amber-500/35' : 'bg-emerald-400/30'
+          }`;
       }
 
       el.innerHTML = `
         <div class="absolute inset-0 flex items-center justify-center">
           ${pulseRingClass ? `<div class="${pulseRingClass}"></div>` : ''}
-          <div class="relative w-8 h-8 rounded-full ${ringColorClass} border border-white/5 flex items-center justify-center transition-transform duration-300 ${
-            isHovered ? 'scale-120' : 'hover:scale-110'
-          }">
+          <div class="relative w-8 h-8 rounded-full ${ringColorClass} border border-white/5 flex items-center justify-center transition-transform duration-300 ${isHovered ? 'scale-120' : 'hover:scale-110'
+        }">
             <div class="w-4 h-4 rounded-full ${baseColorClass} border border-white flex items-center justify-center shadow-lg">
               <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
             </div>
@@ -293,6 +346,14 @@ export default function MapMockup({
       });
     }
   }, [hoveredStopId]);
+
+  // Sync active style mode smoothly
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (map) {
+      map.setStyle(getMapStyle(isDark, activeLayer));
+    }
+  }, [activeLayer, isDark]);
 
   return (
     <div className="relative h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 transition-all dark:border-slate-800 dark:bg-slate-950">
@@ -348,13 +409,12 @@ export default function MapMockup({
                     {stop.name}
                   </span>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-[8.5px] font-extrabold uppercase border ${
-                      stop.intensity === 'high'
-                        ? 'bg-rose-500/15 border-rose-500/20 text-rose-400'
-                        : stop.intensity === 'medium'
+                    className={`rounded-full px-2 py-0.5 text-[8.5px] font-extrabold uppercase border ${stop.intensity === 'high'
+                      ? 'bg-rose-500/15 border-rose-500/20 text-rose-400'
+                      : stop.intensity === 'medium'
                         ? 'bg-amber-500/15 border-amber-500/20 text-amber-450'
                         : 'bg-emerald-500/15 border-emerald-500/20 text-emerald-400'
-                    }`}
+                      }`}
                   >
                     {stop.intensity === 'high' ? 'Wysokie' : stop.intensity === 'medium' ? 'Średnie' : 'Niskie'}
                   </span>

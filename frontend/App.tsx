@@ -14,10 +14,14 @@ export default function App() {
   const [hoveredStopId, setHoveredStopId] = useState<string | null>(null);
   const [selectedStop, setSelectedStop] = useState<Stop | null>(null);
 
-  // Initialize Dark Theme by default matching custom styling preference
+  // Synchronize documentElement dark class with theme state
   useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   const handleStopSelect = (stop: Stop) => {
     setSelectedStop(stop);

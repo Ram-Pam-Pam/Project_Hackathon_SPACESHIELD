@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Stop } from '../types';
 import MapMockup from './MapMockup';
-import { MapPin, ArrowRight, ShieldCheck, Zap, Layers, AlertCircle } from 'lucide-react';
+import { MapPin, ArrowRight, AlertCircle } from 'lucide-react';
 
 interface MapMainViewProps {
   stops: Stop[];
@@ -29,10 +29,6 @@ export default function MapMainView({
         <div className="space-y-6">
           {/* Header */}
           <div className="space-y-2">
-            <div className="inline-flex items-center space-x-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/20 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-              <Zap className="h-3.5 w-3.5 animate-pulse text-emerald-500" />
-              <span>Analiza Przestrzenna v2.4</span>
-            </div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
               Siatka Przystankowa Stalowej Woli
             </h1>
@@ -98,12 +94,6 @@ export default function MapMainView({
 
         {/* Footer branding of Panel */}
         <div className="mt-6 border-t border-slate-200 pt-4 dark:border-slate-800 bg-transparent">
-          <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
-            <span className="flex items-center font-medium">
-              <ShieldCheck className="mr-1 h-3.5 w-3.5 text-emerald-500" /> Bezpieczna transmisja SSL
-            </span>
-            <span className="font-mono text-[10px]">v1.0.8</span>
-          </div>
           <button
             id="cta-go-directly-layers"
             onClick={transitionToLayers}
@@ -126,13 +116,6 @@ export default function MapMainView({
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Trójstopniowa klasyfikacja natężenia publicznych potoków komunikacyjnych
             </p>
-          </div>
-
-          <div className="flex items-center space-x-2 text-xs bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
-            <span className="font-semibold text-slate-500 dark:text-slate-400">Widok aktywny:</span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center">
-              <Layers className="h-3.5 w-3.5 mr-1 text-emerald-500" /> Rejestr Standard (Wektor)
-            </span>
           </div>
         </div>
 

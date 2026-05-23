@@ -47,14 +47,14 @@ export default function DashboardView({ stops }: DashboardViewProps) {
 
   // Adapting colors based on theme classes
   const isDark = document.documentElement.classList.contains('dark');
-  const primaryColor = '#10b981'; // emerald-500
+  const primaryColor = '#1b10b9ff'; // emerald-500
   const secondaryColor = '#06b6d5'; // cyan-500
   const lightGrayColor = isDark ? '#475569' : '#94a3b8';
   const gridLineColor = isDark ? 'rgba(71, 85, 105, 0.15)' : 'rgba(226, 232, 240, 0.6)';
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8 animate-fade-in text-slate-200" id="view-4-dashboard">
-      
+
       {/* Toast Notification Container (Unikamy popup window.alert w iframe) */}
       {showToast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center space-x-3 rounded-2xl border border-emerald-550/30 bg-slate-950 p-4 shadow-xl backdrop-blur-xl">
@@ -65,8 +65,8 @@ export default function DashboardView({ stops }: DashboardViewProps) {
             <h4 className="text-xs font-bold text-white">Eksport Zakończony</h4>
             <p className="text-[10.5px] text-slate-400 font-medium font-medium">Raport PDF i CSV został poprawnie przygotowany.</p>
           </div>
-          <button 
-            onClick={() => setShowToast(false)} 
+          <button
+            onClick={() => setShowToast(false)}
             className="text-slate-500 hover:text-white transition-colors pl-2"
           >
             <X className="h-4 w-4" />
@@ -78,10 +78,10 @@ export default function DashboardView({ stops }: DashboardViewProps) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5 dark:border-slate-800">
         <div>
           <span className="text-xs font-bold uppercase tracking-widest text-emerald-500">
-            Kokpit Decyzyjny 360°
+            Wyniki analizy
           </span>
           <h1 className="mt-1 text-4.5xl font-extrabold tracking-tight bg-gradient-to-r from-slate-950 via-slate-800 to-slate-900 bg-clip-text text-transparent dark:from-white dark:via-emerald-400 dark:to-teal-300">
-            Dashboard Przepływu Stalowa Wola
+            Dashboard Stalowa Wola
           </h1>
           <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
             Analiza statystyczna wydajności taboru miejskiego, wąskich gardeł i natężenia potoków pasażerskich.
@@ -127,11 +127,10 @@ export default function DashboardView({ stops }: DashboardViewProps) {
                 </span>
               </div>
               <span
-                className={`flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border ${
-                  stat.trend === 'up'
+                className={`flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border ${stat.trend === 'up'
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
                     : 'bg-slate-100 dark:bg-slate-900 border-slate-200/50 dark:border-white/5 text-slate-405'
-                }`}
+                  }`}
               >
                 {stat.change}
               </span>
@@ -299,11 +298,10 @@ export default function DashboardView({ stops }: DashboardViewProps) {
                 <button
                   key={category}
                   onClick={() => setSelectedZone(category)}
-                  className={`rounded-lg px-3 py-1.5 text-[10px] font-bold uppercase transition-all ${
-                    selectedZone === category
+                  className={`rounded-lg px-3 py-1.5 text-[10px] font-bold uppercase transition-all ${selectedZone === category
                       ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-sm'
                       : 'text-slate-500 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:bg-slate-850'
-                  }`}
+                    }`}
                 >
                   {category === 'all' ? 'Wszystkie' : category}
                 </button>
@@ -339,13 +337,12 @@ export default function DashboardView({ stops }: DashboardViewProps) {
                         </td>
                         <td className="px-4 py-3.5">
                           <span
-                            className={`inline-flex rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase border ${
-                              stop.intensity === 'high'
+                            className={`inline-flex rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase border ${stop.intensity === 'high'
                                 ? 'bg-rose-500/10 border-rose-500/20 text-rose-500'
                                 : stop.intensity === 'medium'
-                                ? 'bg-amber-500/10 border-amber-500/20 text-amber-500'
-                                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
-                            }`}
+                                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-500'
+                                  : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                              }`}
                           >
                             {stop.intensity === 'high' ? 'Wysokie' : stop.intensity === 'medium' ? 'Średnie' : 'Niskie'}
                           </span>
@@ -361,13 +358,12 @@ export default function DashboardView({ stops }: DashboardViewProps) {
                             {/* Simple visual bar */}
                             <div className="h-1.5 w-16 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200/50 dark:border-white/5">
                               <div
-                                className={`h-full rounded-full ${
-                                  stop.intensity === 'high'
+                                className={`h-full rounded-full ${stop.intensity === 'high'
                                     ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]'
                                     : stop.intensity === 'medium'
-                                    ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
-                                    : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]'
-                                }`}
+                                      ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                                      : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+                                  }`}
                                 style={{ width: `${stop.trafficScore}%` }}
                               />
                             </div>

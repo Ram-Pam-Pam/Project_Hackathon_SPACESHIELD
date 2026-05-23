@@ -68,11 +68,10 @@ export default function LayerAnalysisView({
                   key={tab.id}
                   id={`tab-analysis-${tab.id}`}
                   onClick={() => handleTabClick(tab.id)}
-                  className={`relative rounded-full px-4 py-1.5 text-xs font-semibold tracking-tight transition-all duration-300 flex items-center space-x-1.5 ${
-                    isSelected
-                      ? 'bg-slate-900 text-white shadow-md scale-102 dark:bg-white dark:text-slate-950'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-705'
-                  }`}
+                  className={`relative rounded-full px-4 py-1.5 text-xs font-semibold tracking-tight transition-all duration-300 flex items-center space-x-1.5 ${isSelected
+                    ? 'bg-slate-900 text-white shadow-md scale-102 dark:bg-white dark:text-slate-950'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-705'
+                    }`}
                 >
                   <span>{tab.label}</span>
                   <ArrowUpRight className="h-3 w-3 opacity-60 ml-0.5" />
@@ -92,7 +91,7 @@ export default function LayerAnalysisView({
           <MapMockup
             stops={stops}
             activeLayer={activeLayerMode}
-            onStopClick={() => {}}
+            onStopClick={() => { }}
             hoveredStopId={hoveredStopId}
             setHoveredStopId={setHoveredStopId}
           />
@@ -120,11 +119,10 @@ export default function LayerAnalysisView({
               <button
                 id="btn-layer-bdot10k"
                 onClick={() => handleLayerToggle('bdot10k')}
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold border transition-all ${
-                  activeLayerMode === 'bdot10k'
-                    ? 'bg-white border-white text-slate-950 shadow-md'
-                    : 'bg-slate-900/50 border-slate-800 text-slate-350 hover:bg-slate-800'
-                }`}
+                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold border transition-all ${activeLayerMode === 'bdot10k'
+                  ? 'bg-white border-white text-slate-950 shadow-md'
+                  : 'bg-slate-900/60 border-slate-800/80 text-slate-400 hover:bg-slate-800 hover:border-emerald-500/40 hover:text-slate-200'
+                  }`}
               >
                 <div className="flex items-center space-x-2.5">
                   <LayoutGrid className="h-4 w-4" />
@@ -142,11 +140,10 @@ export default function LayerAnalysisView({
               <button
                 id="btn-layer-satellite"
                 onClick={() => handleLayerToggle('satellite')}
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold border transition-all ${
-                  activeLayerMode === 'satellite'
-                    ? 'bg-white border-white text-slate-950 shadow-md'
-                    : 'bg-slate-900/50 border-slate-800 text-slate-350 hover:bg-slate-800'
-                }`}
+                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold border transition-all ${activeLayerMode === 'satellite'
+                  ? 'bg-white border-white text-slate-950 shadow-md'
+                  : 'bg-slate-900/60 border-slate-800/80 text-slate-400 hover:bg-slate-800 hover:border-emerald-500/40 hover:text-slate-200'
+                  }`}
               >
                 <div className="flex items-center space-x-2.5">
                   <Eye className="h-4 w-4" />
@@ -164,11 +161,10 @@ export default function LayerAnalysisView({
               <button
                 id="btn-layer-standard"
                 onClick={() => handleLayerToggle('standard')}
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold border transition-all ${
-                  activeLayerMode === 'standard'
-                    ? 'bg-white border-white text-slate-950 shadow-md'
-                    : 'bg-slate-900/50 border-slate-800 text-slate-350 hover:bg-slate-800'
-                }`}
+                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold border transition-all ${activeLayerMode === 'standard'
+                  ? 'bg-white border-white text-slate-950 shadow-md'
+                  : 'bg-slate-900/60 border-slate-800/80 text-slate-400 hover:bg-slate-800 hover:border-emerald-500/40 hover:text-slate-200'
+                  }`}
               >
                 <div className="flex items-center space-x-2.5">
                   <Compass className="h-4 w-4" />
