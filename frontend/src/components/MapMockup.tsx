@@ -2,6 +2,9 @@ import { Navigation, ChevronRight } from 'lucide-react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Stop } from '../types';
+import { useEffect, useRef, useState } from 'react';
+import * as h3 from 'h3-js';
+import { POPULATION_H3 } from '../data/populationH3';
 
 interface MapMockupProps {
   stops: Stop[];
@@ -89,10 +92,6 @@ const getMapStyle = (isDark: boolean, activeLayer: 'standard' | 'bdot10k' | 'sat
     ]
   };
 };
-
-import { useEffect, useRef, useState } from 'react';
-import * as h3 from 'h3-js';
-import { POPULATION_H3 } from '../data/populationH3';
 
 // Convert our H3 dataset to GeoJSON features
 const getH3GeoJSON = (): any => {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ActivePage, Stop, AnalysisTab } from './types';
+import { ActivePage, Stop, AnalysisTab } from '../types';
 import { STALOWA_WOLA_STOPS } from './data/stalowaWolaData';
 import Navbar from './components/Navbar';
 import MapMainView from './components/MapMainView';
