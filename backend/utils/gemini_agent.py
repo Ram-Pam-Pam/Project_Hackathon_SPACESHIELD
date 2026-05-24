@@ -47,7 +47,13 @@ WYNIKI_JSON = os.path.join(BASE_DIR, "data", "wyniki_gemini.json")
 
 # --- KLIENT ---
 load_dotenv()
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+
+try:
+    client = genai.Client(api_key=api_key) if api_key else None
+except Exception as e:
+    print(f"[ERROR] Nie można zainicjować klienta Gemini: {e}")
+    client = None
 
 
 def pobierz_kontekst_kategorii(kategoria: str | None) -> str:
@@ -67,6 +73,9 @@ def pobierz_kontekst_kategorii(kategoria: str | None) -> str:
     return f"UWAGA: {instrukcja} Analiza ma być zwięzła, konkretna i ściśle ukierunkowana na ten jeden problem."
 
 def analizuj_surowe_zdjecie(sciezka_do_zdjecia: str, json_path: str, kategoria: str = None, lat: float = None, lng: float = None) -> dict:
+    if not client:
+        raise ValueError("Klient Gemini nie został zainicjowany (brak klucza API).")
+        
     img = Image.open(sciezka_do_zdjecia)
     with open(json_path, encoding='utf-8') as f:
         dane_json = json.load(f)
@@ -102,6 +111,9 @@ W przypadku budynków ze znaną nazwą podawaj ją.
     }
 
 def ekstrahuj_kluczowe_obiekty(sciezka_do_zdjecia: str, json_path: str, kategoria: str = None, lat: float = None, lng: float = None) -> list:
+    if not client:
+        raise ValueError("Klient Gemini nie został zainicjowany (brak klucza API).")
+
     img = Image.open(sciezka_do_zdjecia)
     with open(json_path, encoding='utf-8') as f:
         dane_json = json.load(f)
