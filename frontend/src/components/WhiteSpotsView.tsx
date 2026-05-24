@@ -343,19 +343,6 @@ Analiza strukturalna całego systemu w korelacji ze strefą **${zoneName}** wyka
     setShowOptionsModal(true);
   };
 
-  const handleMapClickAnalysis = (coords: { lat: number; lng: number }) => {
-    const customZone: WhiteSpotZone = {
-      id: 'custom-click-zone',
-      name: `Punkt pomiarowy (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`,
-      lat: coords.lat,
-      lng: coords.lng,
-      efficiencyScore: 0,
-      description: `Analiza optymalizacji obszaru wokół punktu geograficznego o współrzędnych ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}.`
-    };
-    setActiveZone(customZone);
-    setShowOptionsModal(true);
-  };
-
   const handleOptionSelect = (optionId: number) => {
     if (!activeZone) return;
     setShowOptionsModal(false);
@@ -365,11 +352,11 @@ Analiza strukturalna całego systemu w korelacji ze strefą **${zoneName}** wyka
     mockAICall(optionId, activeZone.name, selectedDay).then((res) => {
       setAiResult(res);
       setIsAnalyzing(false);
-      // Scroll to result on mobile
+      // Przewijanie do wyniku
       setTimeout(() => {
         document.getElementById('ai-results-panel')?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
-    });
+    }
   };
 
   const primaryColor = '#10b981'; // emerald-500
@@ -473,23 +460,21 @@ Analiza strukturalna całego systemu w korelacji ze strefą **${zoneName}** wyka
             <div className="absolute top-4 right-4 z-30 flex flex-col space-y-2 pointer-events-auto">
               <button
                 onClick={() => setIsLayersOpen(!isLayersOpen)}
-                className={`p-2.5 rounded-xl border shadow-lg backdrop-blur-md transition-all active:scale-95 flex items-center justify-center ${
-                  isLayersOpen
+                className={`p-2.5 rounded-xl border shadow-lg backdrop-blur-md transition-all active:scale-95 flex items-center justify-center ${isLayersOpen
                     ? 'bg-emerald-500 text-white border-emerald-400'
                     : 'bg-slate-950/80 hover:bg-slate-900 text-slate-200 border-white/10'
-                }`}
+                  }`}
                 title="Zarządzanie warstwami"
               >
                 <Layers className="h-4.5 w-4.5" />
               </button>
-              
+
               <button
                 onClick={() => setIsLegendOpen(!isLegendOpen)}
-                className={`p-2.5 rounded-xl border shadow-lg backdrop-blur-md transition-all active:scale-95 flex items-center justify-center ${
-                  isLegendOpen
+                className={`p-2.5 rounded-xl border shadow-lg backdrop-blur-md transition-all active:scale-95 flex items-center justify-center ${isLegendOpen
                     ? 'bg-emerald-500 text-white border-emerald-400'
                     : 'bg-slate-950/80 hover:bg-slate-900 text-slate-200 border-white/10'
-                }`}
+                  }`}
                 title="Interaktywna Legenda"
               >
                 <Activity className="h-4.5 w-4.5" />
@@ -539,11 +524,10 @@ Analiza strukturalna całego systemu w korelacji ze strefą **${zoneName}** wyka
                         <button
                           key={lay.id}
                           onClick={() => setMapBaseLayer(lay.id as any)}
-                          className={`px-2 py-1 text-[10px] font-bold rounded-lg border text-center transition-all ${
-                            mapBaseLayer === lay.id
+                          className={`px-2 py-1 text-[10px] font-bold rounded-lg border text-center transition-all ${mapBaseLayer === lay.id
                               ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
                               : 'bg-slate-900 border-white/5 text-slate-400 hover:text-white hover:border-white/10'
-                          }`}
+                            }`}
                         >
                           {lay.label}
                         </button>
@@ -704,11 +688,10 @@ Analiza strukturalna całego systemu w korelacji ze strefą **${zoneName}** wyka
                                   setActiveLegendInterval({ layer: 'bus_369', interval: item.interval });
                                 }
                               }}
-                              className={`flex items-center space-x-3 p-1.5 rounded-lg border transition-all cursor-pointer ${
-                                isHighlighted
+                              className={`flex items-center space-x-3 p-1.5 rounded-lg border transition-all cursor-pointer ${isHighlighted
                                   ? 'bg-white/10 border-white/20 scale-[1.02]'
                                   : 'bg-slate-900/40 border-transparent hover:border-white/5'
-                              } ${isDimmed ? 'opacity-40' : 'opacity-100'}`}
+                                } ${isDimmed ? 'opacity-40' : 'opacity-100'}`}
                             >
                               <span className={`h-3 w-6 rounded border ${item.color}`} style={{ borderColor: item.border }} />
                               <span className="text-[11px] font-medium text-slate-200">{item.label}</span>
@@ -746,11 +729,10 @@ Analiza strukturalna całego systemu w korelacji ze strefą **${zoneName}** wyka
                                   setActiveLegendInterval({ layer: 'pieszo_51015', interval: item.interval });
                                 }
                               }}
-                              className={`flex items-center space-x-3 p-1.5 rounded-lg border transition-all cursor-pointer ${
-                                isHighlighted
+                              className={`flex items-center space-x-3 p-1.5 rounded-lg border transition-all cursor-pointer ${isHighlighted
                                   ? 'bg-white/10 border-white/20 scale-[1.02]'
                                   : 'bg-slate-900/40 border-transparent hover:border-white/5'
-                              } ${isDimmed ? 'opacity-40' : 'opacity-100'}`}
+                                } ${isDimmed ? 'opacity-40' : 'opacity-100'}`}
                             >
                               <span className={`h-3 w-6 rounded border ${item.color}`} style={{ borderColor: item.border }} />
                               <span className="text-[11px] font-medium text-slate-200">{item.label}</span>
