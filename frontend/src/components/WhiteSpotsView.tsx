@@ -90,6 +90,18 @@ export default function WhiteSpotsView({
   const [showOptionsModal, setShowOptionsModal] = useState<boolean>(false);
   // TIF satellite overlay states
   const [showTifOverlay, setShowTifOverlay] = useState<boolean>(true);
+  // Analytical layers visibility states
+  const [showBus369, setShowBus369] = useState<boolean>(false);
+  const [showPieszo51015, setShowPieszo51015] = useState<boolean>(false);
+  const [mapBaseLayer, setMapBaseLayer] = useState<'standard' | 'satellite' | 'bdot10k' | 'populacja_h3'>('standard');
+  const [activeLegendInterval, setActiveLegendInterval] = useState<{ layer: 'bus_369' | 'pieszo_51015'; interval: string } | null>(null);
+  const [showStops, setShowStops] = useState<boolean>(true);
+  const [showLines, setShowLines] = useState<boolean>(true);
+
+  // Side panels toggle states (responsive drawers)
+  const [isLayersOpen, setIsLayersOpen] = useState<boolean>(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
+  const [isLegendOpen, setIsLegendOpen] = useState<boolean>(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
+
   // Loading state
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [analysisProgress, setAnalysisProgress] = useState<string>('');
@@ -440,19 +452,299 @@ Analiza strukturalna całego systemu w korelacji ze strefą **${zoneName}** wyka
           </div>
 
           {/* Interactive Map */}
-          <div className="relative flex-1 min-h-[400px] border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-900/50">
+          <div className="relative flex-1 min-h-[500px] border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-900/50">
 
             {/* Map Component */}
             <MapMockup
               stops={stops}
-              activeLayer="standard"
+              activeLayer={mapBaseLayer}
               onStopClick={(stop) => handleZoneSelect(stop)}
               hoveredStopId={hoveredStopId}
               setHoveredStopId={setHoveredStopId}
               selectedStop={selectedStop}
               showTifOverlay={showTifOverlay}
               tifOverlayCoords={activeZone ? { lat: activeZone.lat, lng: activeZone.lng } : null}
+              showBus369={showBus369}
+              showPieszo51015={showPieszo51015}
+              activeLegendInterval={activeLegendInterval}
+              showStops={showStops}
+              showLines={showLines}
             />
+
+            {/* Floating Trigger Buttons (mobile/desktop overlays) */}
+            <div className="absolute top-4 right-4 z-30 flex flex-col space-y-2 pointer-events-auto">
+              <button
+                onClick={() => setIsLayersOpen(!isLayersOpen)}
+                className={`p-2.5 rounded-xl border shadow-lg backdrop-blur-md transition-all active:scale-95 flex items-center justify-center ${
+                  isLayersOpen
+                    ? 'bg-emerald-500 text-white border-emerald-400'
+                    : 'bg-slate-950/80 hover:bg-slate-900 text-slate-200 border-white/10'
+                }`}
+                title="Zarządzanie warstwami"
+              >
+                <Layers className="h-4.5 w-4.5" />
+              </button>
+              
+              <button
+                onClick={() => setIsLegendOpen(!isLegendOpen)}
+                className={`p-2.5 rounded-xl border shadow-lg backdrop-blur-md transition-all active:scale-95 flex items-center justify-center ${
+                  isLegendOpen
+                    ? 'bg-emerald-500 text-white border-emerald-400'
+                    : 'bg-slate-950/80 hover:bg-slate-900 text-slate-200 border-white/10'
+                }`}
+                title="Interaktywna Legenda"
+              >
+                <Activity className="h-4.5 w-4.5" />
+              </button>
+            </div>
+
+            {/* Backdrop for mobile drawers */}
+            {isLayersOpen && (
+              <div
+                onClick={() => setIsLayersOpen(false)}
+                className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-xs lg:hidden"
+              />
+            )}
+            {isLegendOpen && (
+              <div
+                onClick={() => setIsLegendOpen(false)}
+                className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-xs lg:hidden"
+              />
+            )}
+
+            {/* Layers panel (floating widget on desktop, drawer on mobile) */}
+            {isLayersOpen && (
+              <div className="absolute top-20 right-4 z-40 w-64 bg-slate-950/90 text-white border border-white/10 p-4 rounded-xl shadow-2xl backdrop-blur-md transition-all duration-300 pointer-events-auto max-lg:fixed max-lg:top-0 max-lg:right-0 max-lg:bottom-0 max-lg:h-screen max-lg:w-80 max-lg:rounded-none max-lg:border-l max-lg:border-t-0 max-lg:border-b-0 max-lg:border-r-0 max-lg:p-6">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
+                  <div className="flex items-center space-x-2">
+                    <Layers className="h-4 w-4 text-emerald-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Warstwy Mapy</span>
+                  </div>
+                  <button
+                    onClick={() => setIsLayersOpen(false)}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    <X className="h-4.5 w-4.5" />
+                  </button>
+                </div>
+
+                <div className="space-y-4 text-left">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Podkład mapy</label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { id: 'standard', label: 'Standard' },
+                        { id: 'satellite', label: 'Satelita' },
+                        { id: 'bdot10k', label: 'BDOT10k' },
+                        { id: 'populacja_h3', label: 'Populacja H3' },
+                      ].map((lay) => (
+                        <button
+                          key={lay.id}
+                          onClick={() => setMapBaseLayer(lay.id as any)}
+                          className={`px-2 py-1 text-[10px] font-bold rounded-lg border text-center transition-all ${
+                            mapBaseLayer === lay.id
+                              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
+                              : 'bg-slate-900 border-white/5 text-slate-400 hover:text-white hover:border-white/10'
+                          }`}
+                        >
+                          {lay.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t border-white/5 pt-3">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Warstwy sieci i analizy</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5 hover:border-white/10 transition-all cursor-pointer">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={showStops}
+                            onChange={(e) => setShowStops(e.target.checked)}
+                            className="rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-emerald-500/30 h-3.5 w-3.5 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-semibold text-slate-200">Przystanki komunikacyjne</span>
+                        </div>
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" />
+                      </label>
+
+                      <label className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5 hover:border-white/10 transition-all cursor-pointer">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={showLines}
+                            onChange={(e) => setShowLines(e.target.checked)}
+                            className="rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-emerald-500/30 h-3.5 w-3.5 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-semibold text-slate-200">Trasy i linie autobusowe</span>
+                        </div>
+                        <span className="h-1 w-4 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee]" />
+                      </label>
+
+                      <label className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5 hover:border-white/10 transition-all cursor-pointer">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={showBus369}
+                            onChange={(e) => {
+                              setShowBus369(e.target.checked);
+                              if (!e.target.checked && activeLegendInterval?.layer === 'bus_369') {
+                                setActiveLegendInterval(null);
+                              }
+                            }}
+                            className="rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-emerald-500/30 h-3.5 w-3.5 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-semibold text-slate-200">Obszar Bus (3-6-9 min)</span>
+                        </div>
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+                      </label>
+
+                      <label className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5 hover:border-white/10 transition-all cursor-pointer">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={showPieszo51015}
+                            onChange={(e) => {
+                              setShowPieszo51015(e.target.checked);
+                              if (!e.target.checked && activeLegendInterval?.layer === 'pieszo_51015') {
+                                setActiveLegendInterval(null);
+                              }
+                            }}
+                            className="rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-emerald-500/30 h-3.5 w-3.5 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-semibold text-slate-200">Obszar Pieszo (5-10-15 min)</span>
+                        </div>
+                        <span className="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]" />
+                      </label>
+
+                      <label className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5 hover:border-white/10 transition-all cursor-pointer">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={showTifOverlay}
+                            onChange={(e) => setShowTifOverlay(e.target.checked)}
+                            className="rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-emerald-500/30 h-3.5 w-3.5 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-semibold text-slate-200">Satelita AI (TIF)</span>
+                        </div>
+                        <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Legend panel (floating widget on desktop, drawer on mobile) */}
+            {isLegendOpen && (
+              <div className="absolute top-20 left-4 z-40 w-64 bg-slate-950/90 text-white border border-white/10 p-4 rounded-xl shadow-2xl backdrop-blur-md transition-all duration-300 pointer-events-auto max-lg:fixed max-lg:top-0 max-lg:left-0 max-lg:bottom-0 max-lg:h-screen max-lg:w-80 max-lg:rounded-none max-lg:border-r max-lg:border-t-0 max-lg:border-b-0 max-lg:border-l-0 max-lg:p-6">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
+                  <div className="flex items-center space-x-2">
+                    <Activity className="h-4 w-4 text-emerald-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Legenda Interaktywna</span>
+                  </div>
+                  <button
+                    onClick={() => setIsLegendOpen(false)}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    <X className="h-4.5 w-4.5" />
+                  </button>
+                </div>
+
+                <div className="space-y-4 text-left">
+                  {!showBus369 && !showPieszo51015 && (
+                    <p className="text-[10px] text-slate-400 leading-relaxed italic">
+                      Włącz warstwy analityczne (Autobus lub Pieszy) w panelu warstw, aby zobaczyć legendę i wchodzić w interakcję z mapą.
+                    </p>
+                  )}
+
+                  {showBus369 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Obszar Autobusowy</span>
+                        <span className="text-[8px] text-slate-500 font-bold">HOVER / CLICK</span>
+                      </div>
+                      <div className="space-y-1">
+                        {[
+                          { interval: '0 - 3', label: 'Do 3 min', color: 'bg-emerald-500/50 border-emerald-400', border: '#10b981' },
+                          { interval: '3 - 6', label: '3 - 6 min', color: 'bg-cyan-500/40 border-cyan-400', border: '#06b6d4' },
+                          { interval: '6 - 9', label: '6 - 9 min', color: 'bg-blue-500/30 border-blue-400', border: '#3b82f6' },
+                        ].map((item) => {
+                          const isHighlighted = activeLegendInterval?.layer === 'bus_369' && activeLegendInterval?.interval === item.interval;
+                          const isAnyHighlighted = activeLegendInterval !== null;
+                          const isDimmed = isAnyHighlighted && !isHighlighted;
+                          return (
+                            <div
+                              key={item.interval}
+                              onMouseEnter={() => setActiveLegendInterval({ layer: 'bus_369', interval: item.interval })}
+                              onMouseLeave={() => setActiveLegendInterval(null)}
+                              onClick={() => {
+                                if (activeLegendInterval?.layer === 'bus_369' && activeLegendInterval?.interval === item.interval) {
+                                  setActiveLegendInterval(null);
+                                } else {
+                                  setActiveLegendInterval({ layer: 'bus_369', interval: item.interval });
+                                }
+                              }}
+                              className={`flex items-center space-x-3 p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                isHighlighted
+                                  ? 'bg-white/10 border-white/20 scale-[1.02]'
+                                  : 'bg-slate-900/40 border-transparent hover:border-white/5'
+                              } ${isDimmed ? 'opacity-40' : 'opacity-100'}`}
+                            >
+                              <span className={`h-3 w-6 rounded border ${item.color}`} style={{ borderColor: item.border }} />
+                              <span className="text-[11px] font-medium text-slate-200">{item.label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {showPieszo51015 && (
+                    <div className={`space-y-2 ${showBus369 ? 'border-t border-white/5 pt-3' : ''}`}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Obszar Pieszy</span>
+                        <span className="text-[8px] text-slate-500 font-bold">HOVER / CLICK</span>
+                      </div>
+                      <div className="space-y-1">
+                        {[
+                          { interval: '0 - 5', label: 'Do 5 min', color: 'bg-amber-500/50 border-amber-400', border: '#f59e0b' },
+                          { interval: '5 - 10', label: '5 - 10 min', color: 'bg-orange-500/40 border-orange-400', border: '#f97316' },
+                          { interval: '10 - 15', label: '10 - 15 min', color: 'bg-rose-500/30 border-rose-400', border: '#ef4444' },
+                        ].map((item) => {
+                          const isHighlighted = activeLegendInterval?.layer === 'pieszo_51015' && activeLegendInterval?.interval === item.interval;
+                          const isAnyHighlighted = activeLegendInterval !== null;
+                          const isDimmed = isAnyHighlighted && !isHighlighted;
+                          return (
+                            <div
+                              key={item.interval}
+                              onMouseEnter={() => setActiveLegendInterval({ layer: 'pieszo_51015', interval: item.interval })}
+                              onMouseLeave={() => setActiveLegendInterval(null)}
+                              onClick={() => {
+                                if (activeLegendInterval?.layer === 'pieszo_51015' && activeLegendInterval?.interval === item.interval) {
+                                  setActiveLegendInterval(null);
+                                } else {
+                                  setActiveLegendInterval({ layer: 'pieszo_51015', interval: item.interval });
+                                }
+                              }}
+                              className={`flex items-center space-x-3 p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                isHighlighted
+                                  ? 'bg-white/10 border-white/20 scale-[1.02]'
+                                  : 'bg-slate-900/40 border-transparent hover:border-white/5'
+                              } ${isDimmed ? 'opacity-40' : 'opacity-100'}`}
+                            >
+                              <span className={`h-3 w-6 rounded border ${item.color}`} style={{ borderColor: item.border }} />
+                              <span className="text-[11px] font-medium text-slate-200">{item.label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Simulated Loading overlay */}
             {isAnalyzing && (

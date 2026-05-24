@@ -1,5 +1,7 @@
 import mojNowyGeoJSON from '../data/dashboard.json';
 import przystankiGeoJSON from '../data/przystanki.json';
+import bus369GeoJSON from '../data/bus_369.json';
+import pieszo51015GeoJSON from '../data/pieszo_51015.json';
 import { Navigation, ChevronRight } from 'lucide-react';
 import maplibregl from 'maplibre-gl';
 // @ts-ignore
@@ -19,6 +21,11 @@ interface MapMockupProps {
   selectedStop?: Stop | null;
   showTifOverlay?: boolean;
   tifOverlayCoords?: { lng: number; lat: number } | null;
+  showBus369?: boolean;
+  showPieszo51015?: boolean;
+  activeLegendInterval?: { layer: 'bus_369' | 'pieszo_51015'; interval: string } | null;
+  showStops?: boolean;
+  showLines?: boolean;
 }
 
 interface DynamicStop {
@@ -161,6 +168,11 @@ export default function MapMockup({
   selectedStop = null,
   showTifOverlay = false,
   tifOverlayCoords = null,
+  showBus369 = false,
+  showPieszo51015 = false,
+  activeLegendInterval = null,
+  showStops = true,
+  showLines = true,
 }: MapMockupProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
@@ -171,6 +183,9 @@ export default function MapMockup({
 
   const isDarkRef = useRef(isDark);
   const activeLayerRef = useRef(activeLayer);
+  const showBus369Ref = useRef(showBus369);
+  const showPieszo51015Ref = useRef(showPieszo51015);
+  const showLinesRef = useRef(showLines);
 
   useEffect(() => {
     isDarkRef.current = isDark;
@@ -179,6 +194,18 @@ export default function MapMockup({
   useEffect(() => {
     activeLayerRef.current = activeLayer;
   }, [activeLayer]);
+
+  useEffect(() => {
+    showBus369Ref.current = showBus369;
+  }, [showBus369]);
+
+  useEffect(() => {
+    showPieszo51015Ref.current = showPieszo51015;
+  }, [showPieszo51015]);
+
+  useEffect(() => {
+    showLinesRef.current = showLines;
+  }, [showLines]);
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
@@ -236,7 +263,8 @@ export default function MapMockup({
         filter: ['any', ['==', ['geometry-type'], 'LineString'], ['==', ['geometry-type'], 'MultiLineString']],
         layout: {
           'line-join': 'round',
-          'line-cap': 'round'
+          'line-cap': 'round',
+          'visibility': showLinesRef.current ? 'visible' : 'none'
         },
         paint: {
           'line-color': isDarkRef.current ? '#020617' : '#ffffff',
@@ -253,7 +281,8 @@ export default function MapMockup({
         filter: ['any', ['==', ['geometry-type'], 'LineString'], ['==', ['geometry-type'], 'MultiLineString']],
         layout: {
           'line-join': 'round',
-          'line-cap': 'round'
+          'line-cap': 'round',
+          'visibility': showLinesRef.current ? 'visible' : 'none'
         },
         paint: {
           // Domyślne kolory linii przed kliknięciem w dymek
@@ -395,6 +424,106 @@ export default function MapMockup({
           }
         });
       }
+
+      // Add bus_369 source and layers
+      try {
+        map.addSource('bus_369', {
+          type: 'geojson',
+          data: bus369GeoJSON as any
+        });
+
+        map.addLayer({
+          id: 'bus_369-fill',
+          type: 'fill',
+          source: 'bus_369',
+          paint: {
+            'fill-color': [
+              'match',
+              ['get', 'Name'],
+              '0 - 3', 'rgba(16, 185, 129, 0.45)', // emerald
+              '3 - 6', 'rgba(6, 182, 212, 0.35)',  // cyan
+              '6 - 9', 'rgba(59, 130, 246, 0.2)',   // blue
+              'rgba(16, 185, 129, 0.2)'
+            ]
+          },
+          layout: {
+            visibility: showBus369Ref.current ? 'visible' : 'none'
+          }
+        }, labelLayerId);
+
+        map.addLayer({
+          id: 'bus_369-stroke',
+          type: 'line',
+          source: 'bus_369',
+          paint: {
+            'line-color': [
+              'match',
+              ['get', 'Name'],
+              '0 - 3', '#10b981',
+              '3 - 6', '#06b6d4',
+              '6 - 9', '#3b82f6',
+              '#10b981'
+            ],
+            'line-width': 1.5,
+            'line-opacity': 0.6
+          },
+          layout: {
+            visibility: showBus369Ref.current ? 'visible' : 'none'
+          }
+        }, labelLayerId);
+      } catch (e) {
+        console.warn("Failed to load bus_369 layer", e);
+      }
+
+      // Add pieszo_51015 source and layers
+      try {
+        map.addSource('pieszo_51015', {
+          type: 'geojson',
+          data: pieszo51015GeoJSON as any
+        });
+
+        map.addLayer({
+          id: 'pieszo_51015-fill',
+          type: 'fill',
+          source: 'pieszo_51015',
+          paint: {
+            'fill-color': [
+              'match',
+              ['get', 'Name'],
+              '0 - 5', 'rgba(245, 158, 11, 0.45)',  // amber
+              '5 - 10', 'rgba(249, 115, 22, 0.35)', // orange
+              '10 - 15', 'rgba(239, 68, 68, 0.2)',  // rose
+              'rgba(245, 158, 11, 0.2)'
+            ]
+          },
+          layout: {
+            visibility: showPieszo51015Ref.current ? 'visible' : 'none'
+          }
+        }, labelLayerId);
+
+        map.addLayer({
+          id: 'pieszo_51015-stroke',
+          type: 'line',
+          source: 'pieszo_51015',
+          paint: {
+            'line-color': [
+              'match',
+              ['get', 'Name'],
+              '0 - 5', '#f59e0b',
+              '5 - 10', '#f97316',
+              '10 - 15', '#ef4444',
+              '#f59e0b'
+            ],
+            'line-width': 1.5,
+            'line-opacity': 0.6
+          },
+          layout: {
+            visibility: showPieszo51015Ref.current ? 'visible' : 'none'
+          }
+        }, labelLayerId);
+      } catch (e) {
+        console.warn("Failed to load pieszo_51015 layer", e);
+      }
     });
 
     return () => {
@@ -413,7 +542,13 @@ export default function MapMockup({
 
     const currentMarkers: maplibregl.Marker[] = [];
 
-    dynamicStops.forEach((stop) => {
+    if (!showStops) {
+      const popups = document.querySelectorAll('.maplibregl-popup');
+      popups.forEach((p) => p.remove());
+    }
+
+    if (showStops) {
+      dynamicStops.forEach((stop) => {
       const coords = { lng: stop.lng, lat: stop.lat };
 
       const isHigh = stop.intensity === 'high';
@@ -548,11 +683,12 @@ export default function MapMockup({
       currentMarkers.push(marker);
       markersRef.current[stop.id] = marker;
     });
+    }
 
     return () => {
       currentMarkers.forEach(m => m.remove());
     };
-  }, [hoveredStopId, isDarkRef.current]);
+  }, [hoveredStopId, isDarkRef.current, showStops]);
 
   // Smooth slide and center camera when hovered stop changes
   useEffect(() => {
@@ -666,6 +802,88 @@ export default function MapMockup({
       console.warn("Warstwa linii jeszcze nie istnieje lub błąd MapLibre", e);
     }
   }, [selectedLine]); // Nasłuchujemy teraz tylko zmian klikniętej linii!
+
+  // Dynamic update of layer visibility
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    try {
+      if (map.getLayer('bus_369-fill')) {
+        map.setLayoutProperty('bus_369-fill', 'visibility', showBus369 ? 'visible' : 'none');
+        map.setLayoutProperty('bus_369-stroke', 'visibility', showBus369 ? 'visible' : 'none');
+      }
+      if (map.getLayer('pieszo_51015-fill')) {
+        map.setLayoutProperty('pieszo_51015-fill', 'visibility', showPieszo51015 ? 'visible' : 'none');
+        map.setLayoutProperty('pieszo_51015-stroke', 'visibility', showPieszo51015 ? 'visible' : 'none');
+      }
+    } catch (e) {
+      console.warn("Failed to update layer visibility", e);
+    }
+  }, [showBus369, showPieszo51015]);
+
+  // Dynamic update of layer opacity/highlighting based on active legend interval
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    try {
+      if (map.getLayer('bus_369-fill')) {
+        if (activeLegendInterval && activeLegendInterval.layer === 'bus_369') {
+          map.setPaintProperty('bus_369-fill', 'fill-opacity', [
+            'case',
+            ['==', ['get', 'Name'], activeLegendInterval.interval], 0.75,
+            0.05
+          ]);
+          map.setPaintProperty('bus_369-stroke', 'line-opacity', [
+            'case',
+            ['==', ['get', 'Name'], activeLegendInterval.interval], 0.8,
+            0.1
+          ]);
+        } else {
+          map.setPaintProperty('bus_369-fill', 'fill-opacity', 1.0);
+          map.setPaintProperty('bus_369-stroke', 'line-opacity', 0.6);
+        }
+      }
+
+      if (map.getLayer('pieszo_51015-fill')) {
+        if (activeLegendInterval && activeLegendInterval.layer === 'pieszo_51015') {
+          map.setPaintProperty('pieszo_51015-fill', 'fill-opacity', [
+            'case',
+            ['==', ['get', 'Name'], activeLegendInterval.interval], 0.75,
+            0.05
+          ]);
+          map.setPaintProperty('pieszo_51015-stroke', 'line-opacity', [
+            'case',
+            ['==', ['get', 'Name'], activeLegendInterval.interval], 0.8,
+            0.1
+          ]);
+        } else {
+          map.setPaintProperty('pieszo_51015-fill', 'fill-opacity', 1.0);
+          map.setPaintProperty('pieszo_51015-stroke', 'line-opacity', 0.6);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to highlight active legend category", e);
+    }
+  }, [activeLegendInterval]);
+
+  // Dynamic update of transit lines visibility
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    try {
+      if (map.getLayer('transit-lines')) {
+        map.setLayoutProperty('transit-lines', 'visibility', showLines ? 'visible' : 'none');
+      }
+      if (map.getLayer('transit-lines-case')) {
+        map.setLayoutProperty('transit-lines-case', 'visibility', showLines ? 'visible' : 'none');
+      }
+    } catch (e) {
+      console.warn("Failed to update transit lines visibility", e);
+    }
+  }, [showLines]);
 
   return (
     <div className="relative h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 transition-all dark:border-slate-800 dark:bg-slate-950 shadow-lg">
