@@ -1,13 +1,26 @@
 import os
-os.environ['PROJ_DATA'] = r'C:\Studia\HACKHATHON_STALOWA\venv\Lib\site-packages\pyproj\proj_dir\share\proj'
-os.environ['PROJ_LIB'] = r'C:\Studia\HACKHATHON_STALOWA\venv\Lib\site-packages\pyproj\proj_dir\share\proj'
+
+# Dynamic path configuration for both Windows local and Render Linux
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Optional: set pyproj paths only if they exist locally on Windows
+PROJ_DIR_MOCK = r'C:\Studia\HACKHATHON_STALOWA\venv\Lib\site-packages\pyproj\proj_dir\share\proj'
+if os.name == 'nt' and os.path.exists(PROJ_DIR_MOCK):
+    os.environ['PROJ_DATA'] = PROJ_DIR_MOCK
+    os.environ['PROJ_LIB'] = PROJ_DIR_MOCK
 
 from dotenv import load_dotenv
 from PIL import Image
 from google import genai
 from google.genai import types
-from sat_fetcher import pobierz_wcs_geoportal
-from transport_data import generuj_kafelek_i_json, polacz_wyniki_z_baza, _sanitize_gdf
+
+try:
+    from utils.sat_fetcher import pobierz_wcs_geoportal
+    from utils.transport_data import generuj_kafelek_i_json, polacz_wyniki_z_baza, _sanitize_gdf
+except ModuleNotFoundError:
+    from sat_fetcher import pobierz_wcs_geoportal
+    from transport_data import generuj_kafelek_i_json, polacz_wyniki_z_baza, _sanitize_gdf
+
 import asyncio
 import json
 from pydantic import BaseModel
@@ -25,12 +38,12 @@ class RaportAnalityczny(BaseModel):
     szczegoly_obiektow: List[ObiektAnalityczny]
 
 # --- ŚCIEŻKI ---
-GPKG_PATH = r"C:\Studia\HACKHATHON_STALOWA\Project_Hackathon_SPACESHIELD\backend\data\main_db_coded.gpkg"
-IMG_PATH = r"C:\Studia\HACKHATHON_STALOWA\Project_Hackathon_SPACESHIELD\backend\utils\kafelek_do_analizy_ostateczny_kolory.jpg"
-JSON_OUT = r"C:\Studia\HACKHATHON_STALOWA\Project_Hackathon_SPACESHIELD\backend\data\file.json"
-WYNIKI_GPKG = r"C:\Studia\HACKHATHON_STALOWA\Project_Hackathon_SPACESHIELD\backend\data\wyniki_na_mapie.gpkg"
-WYNIKI_GEOJSON = r"C:\Studia\HACKHATHON_STALOWA\Project_Hackathon_SPACESHIELD\backend\data\wyniki_dashboard.geojson"
-WYNIKI_JSON = r"C:\Studia\HACKHATHON_STALOWA\Project_Hackathon_SPACESHIELD\backend\data\wyniki_gemini.json"
+GPKG_PATH = os.path.join(BASE_DIR, "data", "main_db_coded.gpkg")
+IMG_PATH = os.path.join(BASE_DIR, "utils", "kafelek_do_analizy_ostateczny_kolory.jpg")
+JSON_OUT = os.path.join(BASE_DIR, "data", "file.json")
+WYNIKI_GPKG = os.path.join(BASE_DIR, "data", "wyniki_na_mapie.gpkg")
+WYNIKI_GEOJSON = os.path.join(BASE_DIR, "data", "wyniki_dashboard.geojson")
+WYNIKI_JSON = os.path.join(BASE_DIR, "data", "wyniki_gemini.json")
 
 # --- KLIENT ---
 load_dotenv()
