@@ -7,7 +7,7 @@ app = FastAPI(title="Space Pathwarden API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3004/", "https://spacepathwarden-api.onrender.com"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"], # Zezwala na POST, GET, OPTIONS i inne
     allow_headers=["*"],
