@@ -102,8 +102,8 @@ export default function DashboardView({ stops }: DashboardViewProps) {
         </div>
 
         {/* Quick Date Display & Export */}
-        <div className="flex items-center space-x-2.5 self-start sm:self-auto shrink-0">
-          <div className="flex items-center space-x-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-900 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 border border-slate-200/50 dark:border-white/5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto shrink-0">
+          <div className="flex items-center justify-center space-x-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-900 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 border border-slate-200/50 dark:border-white/5">
             <Calendar className="h-4 w-4 text-emerald-500" />
             <span>Maj 2026</span>
           </div>
@@ -112,7 +112,7 @@ export default function DashboardView({ stops }: DashboardViewProps) {
             id="btn-export-reports"
             onClick={handleExport}
             disabled={isExporting}
-            className="flex items-center space-x-2 rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-md active:scale-[0.97]"
+            className="flex items-center justify-center space-x-2 rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-md active:scale-[0.97]"
           >
             <Download className={`h-4 w-4 text-emerald-500 ${isExporting ? 'animate-bounce' : ''}`} />
             <span>{isExporting ? 'Eksportowanie...' : 'Eksportuj raport'}</span>
@@ -191,7 +191,7 @@ export default function DashboardView({ stops }: DashboardViewProps) {
             </div>
 
             {/* Recharts Area + Line Chart */}
-            <div className="mt-6 h-72 w-full text-xs font-mono">
+            <div className="mt-6 h-72 w-full text-xs font-mono relative min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={HOURLY_FLOWS}
@@ -269,7 +269,7 @@ export default function DashboardView({ stops }: DashboardViewProps) {
             </div>
 
             {/* Recharts Bar Chart */}
-            <div className="mt-6 h-72 w-full text-xs font-mono">
+            <div className="mt-6 h-72 w-full text-xs font-mono relative min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={ZONE_COMPARISON}
@@ -356,7 +356,7 @@ export default function DashboardView({ stops }: DashboardViewProps) {
               <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:bg-slate-800 dark:text-slate-500 border-b border-slate-200/50 dark:border-white/5">
                 <tr>
                   <th scope="col" className="px-4 py-3.5 rounded-tl-lg">Nazwa Przystanku</th>
-                  <th scope="col" className="px-4 py-3.5">Kategoria</th>
+                  <th scope="col" className="hidden sm:table-cell px-4 py-3.5">Kategoria</th>
                   <th scope="col" className="px-4 py-3.5 text-right">Potok / dobę</th>
                   <th scope="col" className="px-4 py-3.5 text-right">Wskaźnik</th>
                   <th scope="col" className="px-4 py-3.5">Linie</th>
@@ -372,10 +372,23 @@ export default function DashboardView({ stops }: DashboardViewProps) {
                       className="hover:bg-slate-50/50 transition-colors dark:hover:bg-slate-800/40"
                     >
                       <td className="px-4 py-3.5">
-                        <div className="font-bold text-slate-900 dark:text-white">{stop.name}</div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-bold text-slate-900 dark:text-white">{stop.name}</span>
+                          <span
+                            className={`sm:hidden inline-flex rounded-full px-1.5 py-0.5 text-[8px] font-extrabold uppercase border ${
+                              stop.intensity === 'high'
+                                ? 'bg-rose-500/10 border-rose-500/20 text-rose-500'
+                                : stop.intensity === 'medium'
+                                ? 'bg-amber-500/10 border-amber-500/20 text-amber-500'
+                                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                            }`}
+                          >
+                            {stop.intensity === 'high' ? 'Wysoki' : stop.intensity === 'medium' ? 'Średni' : 'Niski'}
+                          </span>
+                        </div>
                         <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{stop.street}</div>
                       </td>
-                      <td className="px-4 py-3.5">
+                      <td className="hidden sm:table-cell px-4 py-3.5">
                         <span
                           className={`inline-flex rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase border ${
                             stop.intensity === 'high'
@@ -396,7 +409,7 @@ export default function DashboardView({ stops }: DashboardViewProps) {
                           <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
                             {stop.trafficScore}%
                           </span>
-                          <div className="h-1.5 w-16 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-white/5 overflow-hidden">
+                          <div className="hidden md:block h-1.5 w-16 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-white/5 overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all duration-500 ${
                                 stop.intensity === 'high'
@@ -425,11 +438,13 @@ export default function DashboardView({ stops }: DashboardViewProps) {
                       <td className="px-4 py-3.5">
                         {stop.intensity === 'high' ? (
                           <span className="flex items-center text-[10.5px] font-bold text-rose-500">
-                            <AlertTriangle className="mr-1 h-3.5 w-3.5 animate-pulse" /> Przeciążenie
+                            <AlertTriangle className="mr-1 h-3.5 w-3.5 animate-pulse" />
+                            <span className="hidden sm:inline"> Przeciążenie</span>
                           </span>
                         ) : (
                           <span className="text-[10.5px] font-bold text-emerald-500 flex items-center">
-                            <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Stabilny
+                            <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                            <span className="hidden sm:inline"> Stabilny</span>
                           </span>
                         )}
                       </td>

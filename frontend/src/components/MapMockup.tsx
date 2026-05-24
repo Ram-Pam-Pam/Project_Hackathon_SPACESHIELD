@@ -1,5 +1,5 @@
 
-import mojNowyGeoJSON from '../data/dashboard.json'; 
+import mojNowyGeoJSON from '../data/dashboard.json';
 import przystankiGeoJSON from '../data/przystanki.json';
 import { Navigation, ChevronRight } from 'lucide-react';
 import maplibregl from 'maplibre-gl';
@@ -18,6 +18,8 @@ interface MapMockupProps {
   setHoveredStopId: (id: string | null) => void;
   isFlat?: boolean;
   selectedStop?: Stop | null;
+  showTifOverlay?: boolean;
+  tifOverlayCoords?: { lng: number; lat: number } | null;
 }
 
 interface DynamicStop {
@@ -41,7 +43,7 @@ const dynamicStops: DynamicStop[] = przystankiGeoJSON.features.map((feature: any
   intensity: feature.properties.intensity, // 'high' | 'medium' | 'low'
   description: feature.properties.description,
   lines: feature.properties.lines || [],
-  dailyPassengers: feature.properties.flow || 0, 
+  dailyPassengers: feature.properties.flow || 0,
   wsiadlo: feature.properties.wsiadlo || 0,       // <-- DODANO
   wysiadlo: feature.properties.wysiadlo || 0,     // <-- DODANO
   trafficScore: feature.properties.trafficScore || 0,
@@ -158,6 +160,8 @@ export default function MapMockup({
   setHoveredStopId,
   isFlat = false,
   selectedStop = null,
+  showTifOverlay = false,
+  tifOverlayCoords = null,
 }: MapMockupProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
@@ -165,7 +169,7 @@ export default function MapMockup({
 
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [selectedLine, setSelectedLine] = useState<string | null>(null);
-  
+
   const isDarkRef = useRef(isDark);
   const activeLayerRef = useRef(activeLayer);
 
@@ -191,8 +195,8 @@ export default function MapMockup({
 
     let initialCoords = { lat: 50.570, lng: 22.053 }; // Domyślny środek mapy
     if (selectedStop) {
-        const coords = getStopCoords(selectedStop.id);
-        if (coords) initialCoords = coords;
+      const coords = getStopCoords(selectedStop.id);
+      if (coords) initialCoords = coords;
     }
 
     const map = new maplibregl.Map({
@@ -243,9 +247,9 @@ export default function MapMockup({
           'line-join': 'round',
           'line-cap': 'round'
         },
-       paint: {
-         // Domyślne kolory linii przed kliknięciem w dymek
-         'line-color': [
+        paint: {
+          // Domyślne kolory linii przed kliknięciem w dymek
+          'line-color': [
             'match',
             ['to-string', ['get', 'line']],
             '1', '#ef4444',
@@ -254,9 +258,9 @@ export default function MapMockup({
             'P', '#10b981',
             '#0ea5e9' // domyślny
           ],
-         'line-width': 4,
-         'line-opacity': 0.8
-       }
+          'line-width': 4,
+          'line-opacity': 0.8
+        }
       });
 
       const layers = map.getStyle().layers;
@@ -266,8 +270,8 @@ export default function MapMockup({
         if (layer.type === 'symbol') {
           const symbolLayer = layer as maplibregl.SymbolLayerSpecification;
           if (symbolLayer.layout && symbolLayer.layout['text-field']) {
-              labelLayerId = layer.id;
-              break;
+            labelLayerId = layer.id;
+            break;
           }
         }
       }
@@ -288,21 +292,21 @@ export default function MapMockup({
           'paint': {
             'fill-extrusion-color': isDarkRef.current
               ? [
-                  'interpolate',
-                  ['linear'],
-                  ['get', 'render_height'],
-                  0, '#7dd3fc',
-                  100, '#38bdf8',
-                  300, '#0ea5e9'
-                ]
+                'interpolate',
+                ['linear'],
+                ['get', 'render_height'],
+                0, '#7dd3fc',
+                100, '#38bdf8',
+                300, '#0ea5e9'
+              ]
               : [
-                  'interpolate',
-                  ['linear'],
-                  ['get', 'render_height'],
-                  0, 'lightgray',
-                  200, 'royalblue',
-                  400, 'lightblue'
-                ],
+                'interpolate',
+                ['linear'],
+                ['get', 'render_height'],
+                0, 'lightgray',
+                200, 'royalblue',
+                400, 'lightblue'
+              ],
             'fill-extrusion-height': [
               'interpolate',
               ['linear'],
@@ -444,7 +448,7 @@ export default function MapMockup({
 
       el.addEventListener('mouseenter', () => setHoveredStopId(stop.id));
       el.addEventListener('mouseleave', () => setHoveredStopId(null));
-      
+
       // Obsługa kliknięcia i popupu
       el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -454,7 +458,7 @@ export default function MapMockup({
 
         const popupNode = document.createElement('div');
         popupNode.className = 'p-4 rounded-2xl bg-slate-900/95 dark:bg-slate-950/95 text-white border border-slate-700/50 shadow-2xl backdrop-blur-md min-w-[260px] max-w-[300px] animate-fade-in font-sans';
-        
+
         // ZMODYFIKOWANY HTML DYMKA Z PRZYCISKAMI LINII:
         popupNode.innerHTML = `
           <div class="border-b border-slate-800 pb-2.5 mb-3 flex items-start justify-between">
@@ -497,8 +501,7 @@ export default function MapMockup({
           closeOnClick: true,
           maxWidth: '320px',
           anchor: 'bottom',
-          offset: [0, -12],
-          autoPan: false
+          offset: [0, -12]
         })
           .setLngLat([coords.lng, coords.lat])
           .setDOMContent(popupNode)
@@ -548,7 +551,7 @@ export default function MapMockup({
     const coords = getStopCoords(hoveredStopId);
     if (coords) {
       map.easeTo({
-       
+
         duration: 900,
         zoom: Math.max(map.getZoom(), 0),
       });
@@ -563,7 +566,7 @@ export default function MapMockup({
     const coords = getStopCoords(selectedStop.id);
     if (coords) {
       map.easeTo({
-        
+
         zoom: 16,
         duration: 1200
       });
@@ -577,7 +580,23 @@ export default function MapMockup({
     }
   }, [activeLayer, isDark]);
 
-  
+  // Dynamic update of satellite TIF overlay layer
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const removeTifLayer = () => {
+      if (map.getLayer('satellite-tif-layer')) {
+        map.removeLayer('satellite-tif-layer');
+      }
+      if (map.getSource('satellite-tif-source')) {
+        map.removeSource('satellite-tif-source');
+      }
+    };
+    removeTifLayer();
+  }, [showTifOverlay, tifOverlayCoords, activeLayer]);
+
+
 
   // Efekt podświetlania JEDNEJ klikniętej linii na biało
   useEffect(() => {
@@ -588,8 +607,8 @@ export default function MapMockup({
     const defaultColors = [
       'match',
       ['to-string', ['get', 'line']],
-    
-      '#0ea5e9' // błękitny domyślny
+
+      '#6fffd4ff' // błękitny domyślny
     ];
 
     try {
@@ -624,10 +643,10 @@ export default function MapMockup({
       } else {
         // --- STAN: DOMYŚLNY (BRAK ZAZNACZENIA) ---
         // Wszystko wraca do normy z oryginalnymi kolorami
-        map.setPaintProperty('transit-lines', 'line-color', defaultColors); 
+        map.setPaintProperty('transit-lines', 'line-color', defaultColors);
         map.setPaintProperty('transit-lines', 'line-width', 4);
         map.setPaintProperty('transit-lines', 'line-opacity', 0.8);
-        
+
         if (map.getLayer('transit-lines-case')) {
           map.setPaintProperty('transit-lines-case', 'line-opacity', 0.75);
         }
@@ -688,10 +707,10 @@ export default function MapMockup({
                   </span>
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-[8.5px] font-extrabold uppercase border ${stop.intensity === 'high'
-                        ? 'bg-rose-500/15 border-rose-500/20 text-rose-400'
-                        : stop.intensity === 'medium'
-                          ? 'bg-amber-500/15 border-amber-500/20 text-amber-400'
-                          : 'bg-emerald-500/15 border-emerald-500/20 text-emerald-400'
+                      ? 'bg-rose-500/15 border-rose-500/20 text-rose-400'
+                      : stop.intensity === 'medium'
+                        ? 'bg-amber-500/15 border-amber-500/20 text-amber-400'
+                        : 'bg-emerald-500/15 border-emerald-500/20 text-emerald-400'
                       }`}
                   >
                     {stop.intensity === 'high' ? 'Wysokie' : stop.intensity === 'medium' ? 'Średnie' : 'Niskie'}

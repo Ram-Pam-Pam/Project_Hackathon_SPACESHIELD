@@ -26,9 +26,9 @@ export default function MapMainView({
   const totalPassengers = stops.reduce((sum, s) => sum + s.dailyPassengers, 0);
 
   return (
-    <div className="flex h-[calc(100vh-6.5rem)] flex-col lg:flex-row bg-slate-50 dark:bg-slate-950" id="view-1-main-map">
+    <div className="flex min-h-[calc(100vh-6.5rem)] lg:h-[calc(100vh-6.5rem)] flex-col lg:flex-row bg-slate-50 dark:bg-slate-950" id="view-1-main-map">
       {/* Informative Side Panel (Apple & Linear styled) */}
-      <div className="w-full border-b border-slate-200 bg-white p-6 transition-colors duration-300 dark:border-slate-800 dark:bg-slate-950 lg:w-[360px] lg:border-r lg:border-b-0 flex flex-col justify-between overflow-y-auto">
+      <div className="w-full border-b border-slate-200 bg-white p-6 transition-colors duration-300 dark:border-slate-800 dark:bg-slate-950 lg:w-[360px] lg:border-r lg:border-b-0 flex flex-col justify-between lg:overflow-y-auto">
         <div className="space-y-5">
           {/* Header */}
           <div className="space-y-2">
