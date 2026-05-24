@@ -1,4 +1,4 @@
-export type ActivePage = 'map' | 'layers' | 'report' | 'dashboard';
+export type ActivePage = 'map' | 'whitespots' | 'creator';
 
 export interface Stop {
   id: string;

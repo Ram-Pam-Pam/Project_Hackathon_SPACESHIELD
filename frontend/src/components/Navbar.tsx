@@ -15,9 +15,8 @@ export default function Navbar({ activePage, setActivePage, theme, setTheme }: N
 
   const menuItems = [
     { id: 'map' as ActivePage, label: 'Mapa Główna', icon: Map },
-    { id: 'layers' as ActivePage, label: 'Analiza Warstw', icon: Layers },
-    { id: 'report' as ActivePage, label: 'Raport', icon: FileText },
-    { id: 'dashboard' as ActivePage, label: 'Dashboard', icon: BarChart3 },
+    { id: 'whitespots' as ActivePage, label: 'Białe Plamy', icon: Layers },
+    { id: 'creator' as ActivePage, label: 'Kreator Analiz', icon: FileText },
   ];
 
   const currentIndex = menuItems.findIndex((m) => m.id === activePage);
@@ -32,7 +31,7 @@ export default function Navbar({ activePage, setActivePage, theme, setTheme }: N
             <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 opacity-30 blur-md -z-10" />
           </div>
           <div className="flex items-center">
-            <span className="text-gradient-primary text-lg font-extrabold tracking-tight">
+            <span className="text-gradient-primary text-lg font-extrabold tracking-tight hidden sm:inline-block">
               GeoAnalytica
             </span>
             <span className="hidden sm:inline-block ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200/50 dark:border-white/5">
@@ -51,7 +50,7 @@ export default function Navbar({ activePage, setActivePage, theme, setTheme }: N
                 key={item.id}
                 id={`nav-${item.id}`}
                 onClick={() => setActivePage(item.id)}
-                className={`relative flex items-center space-x-1.5 rounded-lg px-4 py-2.5 text-xs font-semibold transition-all duration-300 ${
+                className={`relative flex items-center space-x-1.5 rounded-lg px-2 sm:px-4 py-2.5 text-xs font-semibold transition-all duration-300 ${
                   isActive
                     ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
