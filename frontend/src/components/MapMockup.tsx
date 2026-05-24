@@ -1,4 +1,3 @@
-
 import mojNowyGeoJSON from '../data/dashboard.json';
 import przystankiGeoJSON from '../data/przystanki.json';
 import { Navigation, ChevronRight } from 'lucide-react';
@@ -213,6 +212,15 @@ export default function MapMockup({
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
 
+    // ====================================================
+    // DODANO: ResizeObserver naprawiający renderowanie na mobile
+    // ====================================================
+    const resizeObserver = new ResizeObserver(() => {
+      map.resize();
+    });
+    resizeObserver.observe(mapContainerRef.current);
+    // ====================================================
+
     map.on('style.load', () => {
       // 1. Dodajemy Twoje prawdziwe dane GeoJSON dla linii
       map.addSource('transit-routes', {
@@ -390,6 +398,9 @@ export default function MapMockup({
     });
 
     return () => {
+      // --- DODANO: Czyszczenie obserwatora ---
+      resizeObserver.disconnect();
+      // ---------------------------------------
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -735,4 +746,3 @@ export default function MapMockup({
     </div>
   );
 }
-
