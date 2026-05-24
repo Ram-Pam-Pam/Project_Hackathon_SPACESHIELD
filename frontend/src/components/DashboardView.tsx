@@ -226,7 +226,7 @@ export default function DashboardView({ stops }: DashboardViewProps) {
                   />
                   <Legend wrapperStyle={{ fontSize: '10px', marginTop: '10px' }} />
                   <Area
-                    name="Liczba pasażerów (potok)"
+                    name="Liczba pasażerów"
                     type="monotone"
                     dataKey="flowCount"
                     stroke={primaryColor}

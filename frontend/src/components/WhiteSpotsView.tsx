@@ -164,11 +164,14 @@ export default function WhiteSpotsView({
     try {
       console.log(`🚀 Wysyłam zapytanie do API na adres: ${API_URL}/api/analiza/generuj`, payload);
       
-      const response = await fetch(`${API_URL}/api/analiza/generuj`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-      });
+      const response = await fetch('https://spacepathwarden-api.onrender.com/api/analiza/generuj', {
+  method: 'POST',
+  mode: 'cors', // lub spróbuj zmienić na 'no-cors'
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(payload)
+})
 
       if (!response.ok) throw new Error(`Błąd serwera: ${response.status}`);
 
