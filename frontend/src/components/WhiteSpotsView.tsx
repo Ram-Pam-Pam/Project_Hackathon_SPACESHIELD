@@ -50,8 +50,7 @@ export default function WhiteSpotsView({
   // Pamiętaj, aby podmienić ten awaryjny adres na Wasz docelowy URL z Rendera, jeśli nie macie go w .env!
   const API_URL = import.meta.env.VITE_API_URL || "https://spacepathwarden-api.onrender.com";
 
-  // Scenario days
-  const [selectedDay, setSelectedDay] = useState<'monday' | 'wednesday' | 'saturday'>('monday');
+
   // Selected spot/stop for analysis
   const [activeZone, setActiveZone] = useState<WhiteSpotZone | Stop | null>(null);
   // TIF satellite overlay states
@@ -233,25 +232,7 @@ export default function WhiteSpotsView({
             <span>Nałóż wycinek TIF (Satelita AI)</span>
           </button>
 
-          {/* Day Scenario Toggler */}
-          <div className="flex items-center space-x-1.5 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200/50 dark:border-white/10">
-            {[
-              { id: 'monday' as const, label: 'Poniedziałek (Szczyt poranny)' },
-              { id: 'wednesday' as const, label: 'Środa (Szczyt popołudniowy)' },
-              { id: 'saturday' as const, label: 'Sobota (Weekend)' },
-            ].map((day) => (
-              <button
-                key={day.id}
-                onClick={() => { setSelectedDay(day.id); setAiResult(null); }}
-                className={`rounded-lg px-3 py-1.5 text-[10.5px] font-bold transition-all whitespace-nowrap ${selectedDay === day.id
-                  ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'
-                  }`}
-              >
-                {day.label}
-              </button>
-            ))}
-          </div>
+
         </div>
       </div>
 
