@@ -1,3 +1,4 @@
+adjustText
 affine==2.4.0
 annotated-doc==0.0.4
 annotated-types==0.7.0
