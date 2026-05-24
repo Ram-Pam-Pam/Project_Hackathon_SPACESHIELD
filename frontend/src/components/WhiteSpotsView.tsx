@@ -168,7 +168,12 @@ export default function WhiteSpotsView({
       console.log("🚀 Wysyłam zapytanie do API:", payload);
       
       // Prawdziwy strzał do Twojego działającego API
-      const response = await fetch("http://localhost:8000/api/analiza/generuj", {
+      // Pobieranie URL backendu ze zmiennych środowiskowych Rendera
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      
+      console.log(`🚀 Wysyłam zapytanie do API na adres: ${API_URL}/api/analiza/generuj`, payload);
+      
+      const response = await fetch(`${API_URL}/api/analiza/generuj`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
