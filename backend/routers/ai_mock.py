@@ -28,6 +28,7 @@ router = APIRouter(prefix="/api/analiza", tags=["Analiza Białych Plam i Mapy"])
 class ZadanieAnalizy(BaseModel):
     lat: float
     lng: float
+    kategoria_analizy: Optional[str] = None
 
 # Dynamiczne ustalanie ścieżek na serwerze (działa i na Windows i na Linux/Render)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -97,7 +98,7 @@ async def generuj_raport(request: ZadanieAnalizy):
             raise HTTPException(status_code=500, detail=f"Błąd wczytywania cache Gemini: {str(file_err)}")
     else:
         try:
-            wyniki_ai = analizuj_surowe_zdjecie(img_path, json_path)
+            wyniki_ai = analizuj_surowe_zdjecie(img_path, json_path, request.kategoria_analizy)
         except Exception as e:
             print(f"[WARN] Model 1 failed: {e}. Fallback na cache.")
             try:
@@ -115,7 +116,7 @@ async def generuj_raport(request: ZadanieAnalizy):
 
     if ekstrahuj_kluczowe_obiekty is not None:
         try:
-            kluczowe_obiekty_raw = ekstrahuj_kluczowe_obiekty(img_path, json_path)
+            kluczowe_obiekty_raw = ekstrahuj_kluczowe_obiekty(img_path, json_path, request.kategoria_analizy)
             print(f"[API] Model 2 zwrócił {len(kluczowe_obiekty_raw)} obiektów.")
         except Exception as e:
             print(f"[WARN] Model 2 (ekstrakcja obiektów) failed: {e}. Fallback na cache.")

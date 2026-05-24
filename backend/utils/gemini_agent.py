@@ -50,12 +50,30 @@ load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
-def analizuj_surowe_zdjecie(sciezka_do_zdjecia: str, json_path: str) -> dict:
+def pobierz_kontekst_kategorii(kategoria: str | None) -> str:
+    if not kategoria:
+        return "Analizuj holistycznie — nie skupiaj się na pojedynczych małych obiektach. Analiza ma być zwięzła i konkretna. Podaj podsumowanie i wypunktuj anomalie."
+    
+    opisy = {
+        'ZMIANY_LINII': "SKUP SIĘ WYŁĄCZNIE na układzie linii autobusowych. Analizuj przebieg tras, obsługę przystanków i proponuj optymalizacje siatki połączeń.",
+        'NOWA_INFRASTRUKTURA': "SKUP SIĘ WYŁĄCZNIE na lokalizacji nowych elementów infrastruktury (np. nowe wiaty, drogi, węzły przesiadkowe).",
+        'BEZPIECZENSTWO': "SKUP SIĘ WYŁĄCZNIE na bezpieczeństwie ruchu drogowego (miejsca wypadkowe, niebezpieczne przejścia, widoczność).",
+        'POSZERZENIA_ZWEZENIA': "SKUP SIĘ WYŁĄCZNIE na potencjalnych miejscach poszerzeń lub zwężeń dróg (uspokojenie ruchu, przepustowość).",
+        'PIESI_ROWERZYSCI': "SKUP SIĘ WYŁĄCZNIE na infrastrukturze dla pieszych i rowerzystów (chodniki, ścieżki, ciągi pieszo-rowerowe).",
+        'KOORDYNACJA': "SKUP SIĘ WYŁĄCZNIE na koordynacji transportu publicznego w skali całego miasta (synchronizacja rozkładów, węzły)."
+    }
+    
+    instrukcja = opisy.get(kategoria, "Analizuj obszar pod kątem transportowym.")
+    return f"UWAGA: {instrukcja} Analiza ma być zwięzła, konkretna i ściśle ukierunkowana na ten jeden problem."
+
+def analizuj_surowe_zdjecie(sciezka_do_zdjecia: str, json_path: str, kategoria: str = None) -> dict:
     img = Image.open(sciezka_do_zdjecia)
     with open(json_path, encoding='utf-8') as f:
         dane_json = json.load(f)
 
-    prompt = """
+    kontekst = pobierz_kontekst_kategorii(kategoria)
+
+    prompt = f"""
 Jesteś profesjonalnym analitykiem danych przestrzennych.
 Ten obszar został wyznaczony jako wykluczony komunikacyjnie.
 - Czerwony kolor = budynki niemieszkalne
@@ -64,9 +82,8 @@ Ten obszar został wyznaczony jako wykluczony komunikacyjnie.
 - Labelki na obiektach = ich id (kod_ai)
 - Plik JSON zawiera szczegółowe atrybuty każdego obiektu powiązane z labelką
 
-Analizuj holistycznie — nie skupiaj się na pojedynczych małych obiektach.
 W przypadku budynków ze znaną nazwą podawaj ją.
-Analiza ma być zwięzła i konkretna. Podaj podsumowanie i wypunktuj anomalie.
+{kontekst}
 """
     response = client.models.generate_content(
         model="gemini-2.0-flash",
@@ -83,20 +100,24 @@ Analiza ma być zwięzła i konkretna. Podaj podsumowanie i wypunktuj anomalie.
         "wykryte_anomalie": []
     }
 
-def ekstrahuj_kluczowe_obiekty(sciezka_do_zdjecia: str, json_path: str) -> list:
+def ekstrahuj_kluczowe_obiekty(sciezka_do_zdjecia: str, json_path: str, kategoria: str = None) -> list:
     img = Image.open(sciezka_do_zdjecia)
     with open(json_path, encoding='utf-8') as f:
         dane_json = json.load(f)
 
-    prompt = """
+    kontekst = pobierz_kontekst_kategorii(kategoria)
+
+    prompt = f"""
 Wyznacz kluczowe obiekty z tego obszaru o największym negatywnym wpływie na wykluczenie komunikacyjne, możliwe do poprawy na poziomie miasta.
+{kontekst}
+
 Zwróć wynik TYLKO jako JSON (bez markdown, bez komentarzy) będący LISTĄ OBIEKTÓW w formacie:
 [
-  {
+  {{
     "id": "ID_Z_LABELKI_NA_ZDJECIU",
     "problem": "Bardzo krótki opis problemu",
     "rozwiazanie": "Bardzo krótkie rozwiązanie"
-  }
+  }}
 ]
 """
     response = client.models.generate_content(

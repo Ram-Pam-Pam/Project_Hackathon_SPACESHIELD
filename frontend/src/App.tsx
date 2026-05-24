@@ -5,6 +5,7 @@ import Navbar from './components/Navbar';
 import OverviewView from './components/OverviewView';
 import WhiteSpotsView from './components/WhiteSpotsView';
 import CustomAnalysisView from './components/CustomAnalysisView';
+import OnboardingTour from './components/OnboardingTour';
 
 export default function App() {
   const [activePage, setActivePage] = useState<ActivePage>('map');
@@ -36,6 +37,8 @@ export default function App() {
         theme={theme}
         setTheme={setTheme}
       />
+
+      <OnboardingTour navigateTo={navigateTo} />
 
       {/* 2. Render Views dynamically based on activePage state */}
       <main className="flex-1 w-full flex flex-col" key={viewKey}>

@@ -20,6 +20,9 @@ import {
   Loader2,
   Sparkles,
   X,
+  Search,
+  Target,
+  ChevronRight,
 } from 'lucide-react';
 
 interface WhiteSpotsViewProps {
@@ -56,12 +59,12 @@ export default function WhiteSpotsView({
   // TIF satellite overlay states
   const [showTifOverlay, setShowTifOverlay] = useState<boolean>(true);
   // Analytical layers visibility states
-  const [showBus369, setShowBus369] = useState<boolean>(false);
+  const [showBus369, setShowBus369] = useState<boolean>(true);
   const [showPieszo51015, setShowPieszo51015] = useState<boolean>(false);
   const [mapBaseLayer, setMapBaseLayer] = useState<'standard' | 'satellite' | 'bdot10k' | 'populacja_h3'>('standard');
-  const [activeLegendInterval, setActiveLegendInterval] = useState<{ layer: 'bus_369' | 'pieszo_51015'; interval: string } | null>(null);
-  const [showStops, setShowStops] = useState<boolean>(true);
-  const [showLines, setShowLines] = useState<boolean>(true);
+  const [activeLegendInterval, setActiveLegendInterval] = useState<{ layer: 'bus_369' | 'pieszo_51015'; interval: string } | null>({ layer: 'bus_369', interval: '0' });
+  const [showStops, setShowStops] = useState<boolean>(false);
+  const [showLines, setShowLines] = useState<boolean>(false);
 
   // Side panels toggle states
   const [isLayersOpen, setIsLayersOpen] = useState<boolean>(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
@@ -82,6 +85,11 @@ export default function WhiteSpotsView({
 
   // GeoJSON from AI Model 2 — objects detected by Gemini linked with GPKG geometry
   const [aiGeoJson, setAiGeoJson] = useState<any>(null);
+
+  // ZMIANY DLA ANALIZY UKIERUNKOWANEJ
+  const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
+  const [analysisMode, setAnalysisMode] = useState<'selection' | 'targeted'>('selection');
+  const [zoneToAnalyze, setZoneToAnalyze] = useState<WhiteSpotZone | Stop | null>(null);
 
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   
@@ -121,8 +129,9 @@ export default function WhiteSpotsView({
   }, []);
 
   const handleZoneSelect = (zone: WhiteSpotZone | Stop) => {
-    setActiveZone(zone);
-    startAnalysis(zone);
+    setZoneToAnalyze(zone);
+    setAnalysisMode('selection');
+    setIsAnalysisModalOpen(true);
   };
 
   const handleMapClickAnalysis = (coords: { lat: number; lng: number }) => {
@@ -134,18 +143,22 @@ export default function WhiteSpotsView({
       efficiencyScore: 0,
       description: `Analiza optymalizacji obszaru wokół punktu geograficznego o współrzędnych ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}.`
     };
-    setActiveZone(customZone);
-    startAnalysis(customZone);
+    setZoneToAnalyze(customZone);
+    setAnalysisMode('selection');
+    setIsAnalysisModalOpen(true);
   };
 
-  const startAnalysis = async (zoneToAnalyze: WhiteSpotZone | Stop) => {
+  const startAnalysis = async (zoneTarget: WhiteSpotZone | Stop, kategoria?: string) => {
+    setIsAnalysisModalOpen(false);
+    setActiveZone(zoneTarget);
     setIsAnalyzing(true);
     setAiResult(null);
     setAnalysisProgress('Łączenie z silnikiem Gemini AI...');
 
     const payload = {
-      lat: zoneToAnalyze.lat,
-      lng: zoneToAnalyze.lng
+      lat: zoneTarget.lat,
+      lng: zoneTarget.lng,
+      kategoria_analizy: kategoria || undefined
     };
 
     try {
@@ -736,7 +749,77 @@ export default function WhiteSpotsView({
 
       </div>
 
-      {/* 6-Option Modal Popup Removed */}
+      {/* Analysis Type Modal */}
+      {isAnalysisModalOpen && zoneToAnalyze && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsAnalysisModalOpen(false)} />
+          <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Kreator Analizy Przestrzennej</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Obiekt: <span className="font-mono text-emerald-500">{zoneToAnalyze.name}</span>
+                </p>
+              </div>
+              <button onClick={() => setIsAnalysisModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-500">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {analysisMode === 'selection' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => startAnalysis(zoneToAnalyze)}
+                    className="flex flex-col items-center justify-center p-8 border-2 border-slate-200 dark:border-slate-800 rounded-xl hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all group"
+                  >
+                    <Search className="h-10 w-10 text-emerald-500 mb-4 group-hover:scale-110 transition-transform" />
+                    <span className="font-bold text-slate-900 dark:text-white mb-2">Analiza Pełna</span>
+                    <span className="text-xs text-center text-slate-500 dark:text-slate-400">Holistyczny audyt całego obszaru bez nakładania ograniczeń dziedzinowych na model AI.</span>
+                  </button>
+
+                  <button 
+                    onClick={() => setAnalysisMode('targeted')}
+                    className="flex flex-col items-center justify-center p-8 border-2 border-slate-200 dark:border-slate-800 rounded-xl hover:border-cyan-500 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-all group"
+                  >
+                    <Target className="h-10 w-10 text-cyan-500 mb-4 group-hover:scale-110 transition-transform" />
+                    <span className="font-bold text-slate-900 dark:text-white mb-2">Analiza Ukierunkowana</span>
+                    <span className="text-xs text-center text-slate-500 dark:text-slate-400">Wybierz konkretny problem transportowy, na którym ma skupić się raport ekspercki.</span>
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <button onClick={() => setAnalysisMode('selection')} className="text-xs font-semibold text-slate-500 flex items-center mb-4 hover:text-slate-800 dark:hover:text-white">
+                    ← Powrót do wyboru trybu
+                  </button>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4">Wybierz priorytet analizy:</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { id: 'ZMIANY_LINII', label: 'Możliwe zmiany w układzie linii autobusowych' },
+                      { id: 'NOWA_INFRASTRUKTURA', label: 'Lokalizacja nowych elementów infrastruktury' },
+                      { id: 'BEZPIECZENSTWO', label: 'Rekomendacja związana z bezpieczeństwem ruchu' },
+                      { id: 'POSZERZENIA_ZWEZENIA', label: 'Potencjalne miejsca poszerzeń/zwężeń dróg' },
+                      { id: 'PIESI_ROWERZYSCI', label: 'Płynność ruchu pieszych i rowerzystów' },
+                      { id: 'KOORDYNACJA', label: 'Lepsza koordynacja transportu publicznego' }
+                    ].map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => startAnalysis(zoneToAnalyze, cat.id)}
+                        className="p-4 text-left border border-slate-200 dark:border-slate-800 rounded-xl hover:border-cyan-500 hover:bg-cyan-50 dark:hover:bg-cyan-900/10 transition-colors text-sm font-semibold text-slate-700 dark:text-slate-300 group"
+                      >
+                        <div className="flex items-center justify-between">
+                          {cat.label}
+                          <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-cyan-500 transition-colors" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
