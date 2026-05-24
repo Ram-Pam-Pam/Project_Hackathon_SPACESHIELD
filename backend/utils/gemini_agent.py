@@ -82,7 +82,7 @@ Uwzględnij tylko obiekty o największym negatywnym wpływie, możliwe do popraw
 """
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",  # gemini-3.5-flash nie istnieje
+        model="gemini-2.0-flash",  # gemini-3.5-flash nie istnieje
         contents=[
             prompt,
             img,
