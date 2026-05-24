@@ -54,8 +54,6 @@ export default function WhiteSpotsView({
   const [selectedDay, setSelectedDay] = useState<'monday' | 'wednesday' | 'saturday'>('monday');
   // Selected spot/stop for analysis
   const [activeZone, setActiveZone] = useState<WhiteSpotZone | Stop | null>(null);
-  // Modal toggler
-  const [showOptionsModal, setShowOptionsModal] = useState<boolean>(false);
   // TIF satellite overlay states
   const [showTifOverlay, setShowTifOverlay] = useState<boolean>(true);
   // Analytical layers visibility states
@@ -122,7 +120,7 @@ export default function WhiteSpotsView({
 
   const handleZoneSelect = (zone: WhiteSpotZone | Stop) => {
     setActiveZone(zone);
-    setShowOptionsModal(true);
+    startAnalysis(zone);
   };
 
   const handleMapClickAnalysis = (coords: { lat: number; lng: number }) => {
@@ -135,24 +133,17 @@ export default function WhiteSpotsView({
       description: `Analiza optymalizacji obszaru wokół punktu geograficznego o współrzędnych ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}.`
     };
     setActiveZone(customZone);
-    setShowOptionsModal(true);
+    startAnalysis(customZone);
   };
 
-  const handleOptionSelect = async (optionId: number) => {
-    if (!activeZone) return;
-    
-    setShowOptionsModal(false);
+  const startAnalysis = async (zoneToAnalyze: WhiteSpotZone | Stop) => {
     setIsAnalyzing(true);
     setAiResult(null);
     setAnalysisProgress('Łączenie z silnikiem Gemini AI...');
 
-    const kontekst = selectedDay === 'monday' ? 'Poniedziałek (Szczyt poranny)' 
-                   : selectedDay === 'wednesday' ? 'Środa (Szczyt popołudniowy)' 
-                   : 'Sobota (Weekend)';
-
     const payload = {
-      lat: activeZone.lat,
-      lng: activeZone.lng
+      lat: zoneToAnalyze.lat,
+      lng: zoneToAnalyze.lng
     };
 
     try {
@@ -170,7 +161,7 @@ export default function WhiteSpotsView({
       console.log("✅ Raport AI odebrany!", aiData);
 
       setAiResult({
-        optionTitle: aiData.tytul_raportu || `Analiza AI (Opcja ${optionId})`,
+        optionTitle: aiData.tytul_raportu || 'Analiza Geoprzestrzenna AI',
         report: `### 🤖 Diagnoza Modelu AI\n${aiData.diagnoza_problemu}\n\n#### Rekomendacje Wdrożeniowe:\n${aiData.rekomendacja_dzialan}`,
         kpis: aiData.dane_do_wykresu ? aiData.dane_do_wykresu.map((d: any) => ({
           title: d.kategoria,
@@ -741,63 +732,7 @@ export default function WhiteSpotsView({
 
       </div>
 
-      {/* 6-Option Modal Popup */}
-      {showOptionsModal && activeZone && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-xl bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4">
-
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-white/5 pb-3">
-              <div className="flex items-center space-x-2">
-                <Sparkles className="h-5 w-5 text-emerald-500" />
-                <h3 className="text-base font-bold text-white">Wybierz Moduł Analizy AI</h3>
-              </div>
-              <button
-                onClick={() => setShowOptionsModal(false)}
-                className="text-slate-400 hover:text-white transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Zone Info card */}
-            <div className="bg-slate-950/50 border border-white/5 p-3 rounded-xl">
-              <span className="text-[8px] font-bold uppercase text-emerald-400 block">Analizowany obszar:</span>
-              <strong className="text-sm text-white mt-0.5 block">{activeZone.name}</strong>
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                {'street' in activeZone ? `Ulica: ${activeZone.street} • Potok pasażerski: ${activeZone.dailyPassengers} / db` : activeZone.description}
-              </p>
-            </div>
-
-            {/* 6 options Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-              {[
-                { id: 1, title: 'Możliwe zmiany w układzie linii autobusowych', desc: 'Analiza niedoborów rozkładowych i optymalizacja tras.' },
-                { id: 2, title: 'Lokalizacja nowych elementów infrastruktury', desc: 'Wyznaczanie miejsc na nowe przystanki i węzły.' },
-                { id: 3, title: 'Rekomendacje związane z bezpieczeństwem ruchu', desc: 'Identyfikacja niebezpiecznych przejść i skrzyżowań.' },
-                { id: 4, title: 'Potencjalne miejsca rozszerzeń/zwężeń dróg', desc: 'Wyszukiwanie wąskich gardeł w infrastrukturze.' },
-                { id: 5, title: 'Działania poprawiające płynność ruchu pieszych i rowerzystów', desc: 'Projektowanie ścieżek i bezpiecznych przejść.' },
-                { id: 6, title: 'Propozycje lepszej koordynacji transportu w skali miasta', desc: 'Integracja sieci transportowej i zarządzanie emisjami.' },
-              ].map((opt) => (
-                <button
-                  key={opt.id}
-                  onClick={() => handleOptionSelect(opt.id)}
-                  className="flex flex-col text-left p-3 rounded-xl border border-white/5 bg-slate-950 hover:bg-slate-800 hover:border-emerald-500/50 hover:scale-[1.01] transition-all"
-                >
-                  <div className="flex items-center space-x-1.5">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10 text-[10px] font-extrabold text-emerald-500 font-mono shrink-0">
-                      0{opt.id}
-                    </span>
-                    <strong className="text-xs text-white leading-tight">{opt.title}</strong>
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed">{opt.desc}</p>
-                </button>
-              ))}
-            </div>
-
-          </div>
-        </div>
-      )}
+      {/* 6-Option Modal Popup Removed */}
 
     </div>
   );
