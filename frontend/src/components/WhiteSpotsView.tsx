@@ -343,6 +343,19 @@ Analiza strukturalna całego systemu w korelacji ze strefą **${zoneName}** wyka
     setShowOptionsModal(true);
   };
 
+  const handleMapClickAnalysis = (coords: { lat: number; lng: number }) => {
+    const customZone: WhiteSpotZone = {
+      id: 'custom-click-zone',
+      name: `Punkt pomiarowy (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`,
+      lat: coords.lat,
+      lng: coords.lng,
+      efficiencyScore: 0,
+      description: `Analiza optymalizacji obszaru wokół punktu geograficznego o współrzędnych ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}.`
+    };
+    setActiveZone(customZone);
+    setShowOptionsModal(true);
+  };
+
   const handleOptionSelect = (optionId: number) => {
     if (!activeZone) return;
     setShowOptionsModal(false);
@@ -395,25 +408,6 @@ Analiza strukturalna całego systemu w korelacji ze strefą **${zoneName}** wyka
             <span>Nałóż wycinek TIF (Satelita AI)</span>
           </button>
 
-          {/* Day Scenario Toggler */}
-          <div className="flex items-center space-x-1.5 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200/50 dark:border-white/10">
-            {[
-              { id: 'monday' as const, label: 'Poniedziałek (Szczyt poranny)' },
-              { id: 'wednesday' as const, label: 'Środa (Szczyt popołudniowy)' },
-              { id: 'saturday' as const, label: 'Sobota (Weekend)' },
-            ].map((day) => (
-              <button
-                key={day.id}
-                onClick={() => { setSelectedDay(day.id); setAiResult(null); }}
-                className={`rounded-lg px-3 py-1.5 text-[10.5px] font-bold transition-all whitespace-nowrap ${selectedDay === day.id
-                  ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'
-                  }`}
-              >
-                {day.label}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -452,7 +446,7 @@ Analiza strukturalna całego systemu w korelacji ze strefą **${zoneName}** wyka
           </div>
 
           {/* Interactive Map */}
-          <div className="relative flex-1 min-h-[500px] border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-900/50">
+          <div className="relative flex-1 min-h-[620px] border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-900/50">
 
             {/* Map Component */}
             <MapMockup
@@ -469,6 +463,10 @@ Analiza strukturalna całego systemu w korelacji ze strefą **${zoneName}** wyka
               activeLegendInterval={activeLegendInterval}
               showStops={showStops}
               showLines={showLines}
+              hoverCtaLabel="Analizuj"
+              popupCtaLabel="Analizuj"
+              showTrafficLoadLegend={false}
+              onMapClickAnalysis={handleMapClickAnalysis}
             />
 
             {/* Floating Trigger Buttons (mobile/desktop overlays) */}
@@ -652,10 +650,30 @@ Analiza strukturalna całego systemu w korelacji ze strefą **${zoneName}** wyka
                   </button>
                 </div>
 
-                <div className="space-y-4 text-left">
+                <div className="space-y-4 text-left animate-fade-in">
+                  {/* Obciążenie taboru (zawsze widoczne w legendzie) */}
+                  <div className="space-y-2 pb-3 border-b border-white/5">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Natężenie ruchu (Stalowa Wola)</span>
+                    <div className="grid grid-cols-1 gap-1.5 text-[10.5px]">
+                      <div className="flex items-center space-x-2 bg-slate-900/40 border border-white/5 p-1.5 rounded-lg">
+                        <span className="h-2.5 w-2.5 rounded-full bg-rose-500 ring-4 ring-rose-500/20 animate-pulse"></span>
+                        <span className="font-semibold text-slate-200">Wysokie obciążenie</span>
+                      </div>
+                      <div className="flex items-center space-x-2 bg-slate-900/40 border border-white/5 p-1.5 rounded-lg">
+                        <span className="h-2.5 w-2.5 rounded-full bg-amber-500 ring-4 ring-amber-500/20"></span>
+                        <span className="font-semibold text-slate-200">Średnie obciążenie</span>
+                      </div>
+                      <div className="flex items-center space-x-2 bg-slate-900/40 border border-white/5 p-1.5 rounded-lg">
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"></span>
+                        <span className="font-semibold text-slate-200">Niskie obciążenie</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Informacja o warstwach analitycznych */}
                   {!showBus369 && !showPieszo51015 && (
                     <p className="text-[10px] text-slate-400 leading-relaxed italic">
-                      Włącz warstwy analityczne (Autobus lub Pieszy) w panelu warstw, aby zobaczyć legendę i wchodzić w interakcję z mapą.
+                      Włącz warstwy analityczne (Autobus lub Pieszy) w panelu warstw, aby zobaczyć izochrony i wchodzić w interakcję z mapą.
                     </p>
                   )}
 

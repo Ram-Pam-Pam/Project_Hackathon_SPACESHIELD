@@ -158,6 +158,9 @@ export default function OverviewView({
             hoveredStopId={hoveredStopId}
             setHoveredStopId={setHoveredStopId}
             selectedStop={selectedStop}
+            hoverCtaLabel="Pokaż szczegóły"
+            popupCtaLabel="Pokaż szczegóły"
+            showTrafficLoadLegend={true}
           />
         </div>
       </div>

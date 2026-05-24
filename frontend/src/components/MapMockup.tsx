@@ -26,6 +26,10 @@ interface MapMockupProps {
   activeLegendInterval?: { layer: 'bus_369' | 'pieszo_51015'; interval: string } | null;
   showStops?: boolean;
   showLines?: boolean;
+  hoverCtaLabel?: string;
+  showTrafficLoadLegend?: boolean;
+  onMapClickAnalysis?: (coords: { lat: number; lng: number }) => void;
+  popupCtaLabel?: string;
 }
 
 interface DynamicStop {
@@ -173,10 +177,17 @@ export default function MapMockup({
   activeLegendInterval = null,
   showStops = true,
   showLines = true,
+  hoverCtaLabel = 'Analiza',
+  showTrafficLoadLegend = true,
+  onMapClickAnalysis,
+  popupCtaLabel = 'Przejdź do analizy →',
 }: MapMockupProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Record<string, maplibregl.Marker>>({});
+
+  const onMapClickAnalysisRef = useRef(onMapClickAnalysis);
+  onMapClickAnalysisRef.current = onMapClickAnalysis;
 
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [selectedLine, setSelectedLine] = useState<string | null>(null);
@@ -238,6 +249,37 @@ export default function MapMockup({
     mapInstanceRef.current = map;
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+
+    map.on('click', (e) => {
+      if (onMapClickAnalysisRef.current) {
+        const popups = document.querySelectorAll('.maplibregl-popup');
+        popups.forEach((p) => p.remove());
+
+        const popupNode = document.createElement('div');
+        popupNode.className = 'p-3 rounded-xl bg-slate-900/95 dark:bg-slate-950/95 text-white border border-slate-700/50 shadow-2xl backdrop-blur-md min-w-[120px] text-center font-sans';
+        popupNode.innerHTML = `
+          <button id="map-custom-analysis-btn" class="w-full text-center bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-extrabold text-[12px] py-1.5 px-4 rounded-xl shadow-lg cursor-pointer transition-all active:scale-[0.97]">
+            Analizuj
+          </button>
+        `;
+
+        const newPopup = new maplibregl.Popup({
+          closeButton: false,
+          closeOnClick: true,
+          anchor: 'bottom',
+          offset: [0, -5]
+        })
+          .setLngLat(e.lngLat)
+          .setDOMContent(popupNode)
+          .addTo(map);
+
+        popupNode.querySelector('#map-custom-analysis-btn')?.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          newPopup.remove();
+          onMapClickAnalysisRef.current?.({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+        });
+      }
+    });
 
     // ====================================================
     // DODANO: ResizeObserver naprawiający renderowanie na mobile
@@ -558,34 +600,34 @@ export default function MapMockup({
       const el = document.createElement('div');
       el.id = `map-stop-marker-${stop.id}`;
       el.className = 'relative flex items-center justify-center cursor-pointer marker-container';
-      el.style.width = '52px';
-      el.style.height = '52px';
+      el.style.width = '40px';
+      el.style.height = '40px';
       el.style.transition = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)';
 
-      let baseColorClass = 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]';
+      let baseColorClass = 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]';
       let ringColorClass = 'bg-emerald-500/15';
       let pulseRingClass = '';
 
       if (isHigh) {
-        baseColorClass = 'bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.6)]';
+        baseColorClass = 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.6)]';
         ringColorClass = 'bg-rose-500/20';
-        pulseRingClass = 'absolute w-10 h-10 rounded-full animate-ping opacity-60 bg-rose-500/25';
+        pulseRingClass = 'absolute w-8 h-8 rounded-full animate-ping opacity-60 bg-rose-500/25';
       } else if (isMedium) {
-        baseColorClass = 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.55)]';
+        baseColorClass = 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.55)]';
         ringColorClass = 'bg-amber-500/15';
-        pulseRingClass = 'absolute w-8 h-8 rounded-full animate-ping opacity-50 bg-amber-500/20';
+        pulseRingClass = 'absolute w-6 h-6 rounded-full animate-ping opacity-50 bg-amber-500/20';
       }
 
       if (isHovered) {
         el.style.transform = 'scale(1.3)';
-        pulseRingClass = `absolute w-12 h-12 rounded-full animate-pulse opacity-80 ${isHigh ? 'bg-rose-500/40' : isMedium ? 'bg-amber-500/35' : 'bg-emerald-400/30'}`;
+        pulseRingClass = `absolute w-9 h-9 rounded-full animate-pulse opacity-80 ${isHigh ? 'bg-rose-500/40' : isMedium ? 'bg-amber-500/35' : 'bg-emerald-400/30'}`;
       }
 
       el.innerHTML = `
         <div class="absolute inset-0 flex items-center justify-center">
           ${pulseRingClass ? `<div class="${pulseRingClass}"></div>` : ''}
-          <div class="relative w-8 h-8 rounded-full ${ringColorClass} border border-white/5 flex items-center justify-center transition-transform duration-300 ${isHovered ? 'scale-120' : 'hover:scale-110'}">
-            <div class="w-4 h-4 rounded-full ${baseColorClass} border border-white flex items-center justify-center shadow-lg">
+          <div class="relative w-6 h-6 rounded-full ${ringColorClass} border border-white/5 flex items-center justify-center transition-transform duration-300 ${isHovered ? 'scale-120' : 'hover:scale-110'}">
+            <div class="w-3.5 h-3.5 rounded-full ${baseColorClass} border border-white flex items-center justify-center shadow-lg">
               <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
             </div>
           </div>
@@ -638,7 +680,7 @@ export default function MapMockup({
             </div>
           </div>
           <button id="popup-btn-${stop.id}" class="w-full text-center bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-extrabold text-[11px] py-2 px-4 rounded-xl shadow-lg shadow-emerald-500/15 cursor-pointer transition-all active:scale-[0.97]">
-            Przejdź do analizy →
+            ${popupCtaLabel}
           </button>
         `;
 
@@ -903,25 +945,27 @@ export default function MapMockup({
         </div>
       </div>
 
-      <div className="absolute right-4 top-4 z-10 hidden sm:flex flex-col space-y-1.5 rounded-xl border border-white/10 bg-slate-950/80 p-3 shadow-2xl backdrop-blur-xl pointer-events-none">
-        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
-          Obciążenie taboru
-        </span>
-        <div className="flex items-center space-x-3 text-[10.5px]">
-          <div className="flex items-center space-x-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-rose-500 ring-4 ring-rose-500/20 animate-pulse"></span>
-            <span className="font-bold text-slate-200">Wysokie</span>
-          </div>
-          <div className="flex items-center space-x-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-amber-500 ring-4 ring-amber-500/20"></span>
-            <span className="font-bold text-slate-200">Średnie</span>
-          </div>
-          <div className="flex items-center space-x-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"></span>
-            <span className="font-bold text-slate-200">Niskie</span>
+      {showTrafficLoadLegend && (
+        <div className="absolute right-4 top-4 z-10 hidden sm:flex flex-col space-y-1.5 rounded-xl border border-white/10 bg-slate-950/80 p-3 shadow-2xl backdrop-blur-xl pointer-events-none">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
+            Obciążenie taboru
+          </span>
+          <div className="flex items-center space-x-3 text-[10.5px]">
+            <div className="flex items-center space-x-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-rose-500 ring-4 ring-rose-500/20 animate-pulse"></span>
+              <span className="font-bold text-slate-200">Wysokie</span>
+            </div>
+            <div className="flex items-center space-x-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-500 ring-4 ring-amber-500/20"></span>
+              <span className="font-bold text-slate-200">Średnie</span>
+            </div>
+            <div className="flex items-center space-x-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"></span>
+              <span className="font-bold text-slate-200">Niskie</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {hoveredStopId && (
         <div className="absolute bottom-4 left-4 right-4 z-10 rounded-2xl border border-white/10 bg-slate-950/90 p-4 shadow-2xl backdrop-blur-xl transition-all duration-300 sm:left-4 sm:right-auto sm:max-w-sm animate-fade-in">
@@ -953,7 +997,7 @@ export default function MapMockup({
                     Pasażerowie: <strong className="font-mono text-slate-200 font-bold">{stop.dailyPassengers.toLocaleString()} / dobę</strong>
                   </span>
                   <span className="flex items-center font-bold text-emerald-400 cursor-pointer hover:text-emerald-300 transition-colors" onClick={() => onStopClick(stop as unknown as Stop)}>
-                    Analiza <ChevronRight className="ml-0.5 h-3 w-3" />
+                    {hoverCtaLabel} <ChevronRight className="ml-0.5 h-3 w-3" />
                   </span>
                 </div>
               </div>
