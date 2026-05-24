@@ -80,6 +80,9 @@ export default function WhiteSpotsView({
     optionTitle: string;
   } | null>(null);
 
+  // GeoJSON from AI Model 2 — objects detected by Gemini linked with GPKG geometry
+  const [aiGeoJson, setAiGeoJson] = useState<any>(null);
+
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   
   // POBIERANIE BIAŁYCH PLAM Z BACKENDU PO ZAŁADOWANIU WIDOKU
@@ -159,16 +162,27 @@ export default function WhiteSpotsView({
       const aiData = await response.json();
       console.log("✅ Raport AI odebrany!", aiData);
 
+      // Build the report text from the holistic model + structured objects
+      let reportText = `### 🤖 Diagnoza Modelu AI\n${aiData.diagnoza_problemu || ''}`;
+      if (aiData.rekomendacja_dzialan) {
+        reportText += `\n\n#### Rekomendacje:\n${aiData.rekomendacja_dzialan}`;
+      }
+      if (aiData.kluczowe_obiekty && aiData.kluczowe_obiekty.length > 0) {
+        reportText += `\n\n#### Kluczowe obiekty wyznaczone przez AI:\n`;
+        aiData.kluczowe_obiekty.forEach((obj: any) => {
+          reportText += `- **${obj.id}**: ${obj.problem || obj.status || ''} → _${obj.rozwiazanie || obj.wnioski || ''}_\n`;
+        });
+      }
+
       setAiResult({
         optionTitle: aiData.tytul_raportu || 'Analiza Geoprzestrzenna AI',
-        report: `### 🤖 Diagnoza Modelu AI\n${aiData.diagnoza_problemu}\n\n#### Rekomendacje Wdrożeniowe:\n${aiData.rekomendacja_dzialan}`,
+        report: reportText,
         kpis: aiData.dane_do_wykresu ? aiData.dane_do_wykresu.map((d: any) => ({
           title: d.kategoria,
           value: String(d.wartosc) + (d.kategoria.includes('%') ? '%' : ''),
           desc: 'Wskazanie modelu',
           isAlert: typeof d.wartosc === 'number' && d.wartosc > 50
         })) : [],
-        // Subtelnie losujemy wartości potoków, aby wykresy świetnie się animowały po każdej zmianie opcji
         hourlyFlow: [
           { time: '07:00', flowCount: 200 + Math.floor(Math.random()*100), delayMinutes: 12 },
           { time: '08:00', flowCount: 500 + Math.floor(Math.random()*200), delayMinutes: 25 },
@@ -180,6 +194,14 @@ export default function WhiteSpotsView({
           { zone: 'Rekomendacja AI', passengers: 400 + Math.floor(Math.random()*100), capacity: 500 }
         ]
       });
+
+      // Set GeoJSON for AI-detected objects on the map
+      if (aiData.ai_geojson && aiData.ai_geojson.features && aiData.ai_geojson.features.length > 0) {
+        setAiGeoJson(aiData.ai_geojson);
+        console.log(`🗺️ AI GeoJSON: ${aiData.ai_geojson.features.length} obiektów na mapie.`);
+      } else {
+        setAiGeoJson(null);
+      }
 
     } catch (error) {
       console.error("❌ Błąd podczas łączenia z AI:", error);
@@ -292,6 +314,7 @@ export default function WhiteSpotsView({
               popupCtaLabel="Analizuj"
               showTrafficLoadLegend={false}
               onMapClickAnalysis={handleMapClickAnalysis}
+              aiGeoJson={aiGeoJson}
             />
 
             {/* Floating Trigger Buttons (mobile/desktop overlays) */}

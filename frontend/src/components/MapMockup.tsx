@@ -30,6 +30,7 @@ interface MapMockupProps {
   showTrafficLoadLegend?: boolean;
   onMapClickAnalysis?: (coords: { lat: number; lng: number }) => void;
   popupCtaLabel?: string;
+  aiGeoJson?: any;
 }
 
 interface DynamicStop {
@@ -181,6 +182,7 @@ export default function MapMockup({
   showTrafficLoadLegend = true,
   onMapClickAnalysis,
   popupCtaLabel = 'Przejdź do analizy →',
+  aiGeoJson = null,
 }: MapMockupProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
@@ -926,6 +928,111 @@ export default function MapMockup({
       console.warn("Failed to update transit lines visibility", e);
     }
   }, [showLines]);
+
+  // =====================================================================
+  // AI-DETECTED OBJECTS LAYER — renders GeoJSON from Gemini Model 2
+  // =====================================================================
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    const SOURCE_ID = 'ai-detected-objects';
+    const FILL_LAYER = 'ai-objects-fill';
+    const OUTLINE_LAYER = 'ai-objects-outline';
+    const LABEL_LAYER = 'ai-objects-labels';
+
+    // Clean up previous layers/source
+    try {
+      if (map.getLayer(LABEL_LAYER)) map.removeLayer(LABEL_LAYER);
+      if (map.getLayer(OUTLINE_LAYER)) map.removeLayer(OUTLINE_LAYER);
+      if (map.getLayer(FILL_LAYER)) map.removeLayer(FILL_LAYER);
+      if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+    } catch (e) { /* ignore */ }
+
+    if (!aiGeoJson || !aiGeoJson.features || aiGeoJson.features.length === 0) return;
+
+    // Add source
+    map.addSource(SOURCE_ID, {
+      type: 'geojson',
+      data: aiGeoJson
+    });
+
+    // Fill layer — semi-transparent gold
+    map.addLayer({
+      id: FILL_LAYER,
+      type: 'fill',
+      source: SOURCE_ID,
+      filter: ['any', ['==', '$type', 'Polygon'], ['==', '$type', 'MultiPolygon']],
+      paint: {
+        'fill-color': '#f59e0b',
+        'fill-opacity': 0.35
+      }
+    });
+
+    // Outline layer — bright gold border
+    map.addLayer({
+      id: OUTLINE_LAYER,
+      type: 'line',
+      source: SOURCE_ID,
+      paint: {
+        'line-color': '#f59e0b',
+        'line-width': 2.5,
+        'line-opacity': 0.9
+      }
+    });
+
+    // Label layer — show problem text
+    map.addLayer({
+      id: LABEL_LAYER,
+      type: 'symbol',
+      source: SOURCE_ID,
+      layout: {
+        'text-field': ['coalesce', ['get', 'problem'], ['get', 'kod_ai'], ''],
+        'text-size': 10,
+        'text-anchor': 'center',
+        'text-allow-overlap': true,
+        'text-max-width': 12
+      },
+      paint: {
+        'text-color': '#ffffff',
+        'text-halo-color': '#000000',
+        'text-halo-width': 1.5
+      }
+    });
+
+    // Popup on click
+    const handleClick = (e: any) => {
+      if (!e.features || e.features.length === 0) return;
+      const props = e.features[0].properties || {};
+      const popupHtml = `
+        <div style="font-family:system-ui;max-width:240px">
+          <div style="font-size:11px;font-weight:800;color:#f59e0b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">
+            Obiekt AI: ${props.kod_ai || props.id || '?'}
+          </div>
+          ${props.problem ? `<div style="font-size:11px;margin-bottom:2px"><strong>Problem:</strong> ${props.problem}</div>` : ''}
+          ${props.rozwiazanie ? `<div style="font-size:11px;color:#10b981"><strong>Rozwiązanie:</strong> ${props.rozwiazanie}</div>` : ''}
+        </div>
+      `;
+      new maplibregl.Popup({ closeButton: true, maxWidth: '260px' })
+        .setLngLat(e.lngLat)
+        .setHTML(popupHtml)
+        .addTo(map);
+    };
+
+    map.on('click', FILL_LAYER, handleClick);
+    map.on('click', OUTLINE_LAYER, handleClick);
+
+    // Cursor
+    map.on('mouseenter', FILL_LAYER, () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', FILL_LAYER, () => { map.getCanvas().style.cursor = ''; });
+
+    return () => {
+      try {
+        map.off('click', FILL_LAYER, handleClick);
+        map.off('click', OUTLINE_LAYER, handleClick);
+      } catch (e) { /* ignore */ }
+    };
+  }, [aiGeoJson]);
 
   return (
     <div className="relative h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 transition-all dark:border-slate-800 dark:bg-slate-950 shadow-lg">

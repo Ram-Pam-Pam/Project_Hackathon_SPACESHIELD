@@ -27,15 +27,15 @@ from pydantic import BaseModel
 from typing import List
 
 # --- SCHEMAT ODPOWIEDZI ---
-class ObiektAnalityczny(BaseModel):
+class ObiektKluczowy(BaseModel):
     id: str
-    status: str
-    wnioski: str
+    problem: str
+    rozwiazanie: str
 
 class RaportAnalityczny(BaseModel):
     podsumowanie_obszaru: str
     wykryte_anomalie: List[str]
-    szczegoly_obiektow: List[ObiektAnalityczny]
+    szczegoly_obiektow: List[ObiektKluczowy]
 
 # --- ŚCIEŻKI ---
 GPKG_PATH = os.path.join(BASE_DIR, "data", "main_db_coded.gpkg")
@@ -52,8 +52,6 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def analizuj_surowe_zdjecie(sciezka_do_zdjecia: str, json_path: str) -> dict:
     img = Image.open(sciezka_do_zdjecia)
-
-    # Wczytaj JSON z atrybutami
     with open(json_path, encoding='utf-8') as f:
         dane_json = json.load(f)
 
@@ -62,27 +60,47 @@ Jesteś profesjonalnym analitykiem danych przestrzennych.
 Ten obszar został wyznaczony jako wykluczony komunikacyjnie.
 - Czerwony kolor = budynki niemieszkalne
 - Niebieski kolor = chodniki
-- Fioletowy = drogi
+- Fioletowy/Żółty = drogi
 - Labelki na obiektach = ich id (kod_ai)
 - Plik JSON zawiera szczegółowe atrybuty każdego obiektu powiązane z labelką
 
 Analizuj holistycznie — nie skupiaj się na pojedynczych małych obiektach.
 W przypadku budynków ze znaną nazwą podawaj ją.
-
-Zwróć wynik TYLKO jako JSON (bez markdown, bez komentarzy) w formacie:
-{
-  "podsumowanie_obszaru": "...",
-  "wykryte_anomalie": ["...", "..."],
-  "szczegoly_obiektow": [
-    {"id": "XXXX", "status": "...", "wnioski": "..."}
-  ]
-}
-
-Uwzględnij tylko obiekty o największym negatywnym wpływie, możliwe do poprawy na poziomie miasta.
+Analiza ma być zwięzła i konkretna. Podaj podsumowanie i wypunktuj anomalie.
 """
-
     response = client.models.generate_content(
-        model="gemini-2.0-flash",  # gemini-3.5-flash nie istnieje
+        model="gemini-2.0-flash",
+        contents=[
+            prompt,
+            img,
+            f"Dane atrybutowe obiektów:\n{json.dumps(dane_json, ensure_ascii=False)}"
+        ]
+    )
+    
+    # We will return the text under 'podsumowanie_obszaru' to match old schema slightly
+    return {
+        "podsumowanie_obszaru": response.text,
+        "wykryte_anomalie": []
+    }
+
+def ekstrahuj_kluczowe_obiekty(sciezka_do_zdjecia: str, json_path: str) -> list:
+    img = Image.open(sciezka_do_zdjecia)
+    with open(json_path, encoding='utf-8') as f:
+        dane_json = json.load(f)
+
+    prompt = """
+Wyznacz kluczowe obiekty z tego obszaru o największym negatywnym wpływie na wykluczenie komunikacyjne, możliwe do poprawy na poziomie miasta.
+Zwróć wynik TYLKO jako JSON (bez markdown, bez komentarzy) będący LISTĄ OBIEKTÓW w formacie:
+[
+  {
+    "id": "ID_Z_LABELKI_NA_ZDJECIU",
+    "problem": "Bardzo krótki opis problemu",
+    "rozwiazanie": "Bardzo krótkie rozwiązanie"
+  }
+]
+"""
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
         contents=[
             prompt,
             img,
@@ -92,9 +110,9 @@ Uwzględnij tylko obiekty o największym negatywnym wpływie, możliwe do popraw
             response_mime_type="application/json",
         )
     )
-
-    wyniki = json.loads(response.text)
-    return wyniki
+    
+    obiekty = json.loads(response.text)
+    return obiekty
 
 
 if __name__ == "__main__":

@@ -244,9 +244,9 @@ def polacz_wyniki_z_baza(
 
     wyniki_df = pd.DataFrame([
         {
-            'kod_ai': obj['id'],
-            'status': obj['status'],
-            'wnioski': obj['wnioski']
+            'kod_ai': obj.get('id', ''),
+            'problem': obj.get('problem', obj.get('status', '')),
+            'rozwiazanie': obj.get('rozwiazanie', obj.get('wnioski', ''))
         }
         for obj in wyniki_gemini
     ])
