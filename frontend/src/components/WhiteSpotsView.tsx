@@ -4,7 +4,6 @@ import MapMockup from './MapMockup';
 import {
   AreaChart,
   Area,
-  Line,
   BarChart,
   Bar,
   XAxis,
@@ -15,20 +14,12 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import {
-  TrendingUp,
-  Clock,
-  MapPin,
-  AlertTriangle,
-  Calendar,
-  Sparkles,
-  CheckCircle2,
-  X,
-  FileText,
   Activity,
   Layers,
-  ArrowRight,
   ShieldAlert,
-  Loader2
+  Loader2,
+  Sparkles,
+  X,
 } from 'lucide-react';
 
 interface WhiteSpotsViewProps {
@@ -45,43 +36,20 @@ interface WhiteSpotZone {
   lat: number;
   lng: number;
   description: string;
-  efficiencyScore: number; // Low means "wozi powietrze"
+  efficiencyScore: number; 
 }
 
-const WHITE_SPOT_ZONES: WhiteSpotZone[] = [
-  {
-    id: 'jp2',
-    name: 'Korytarz Al. Jana Pawła II',
-    lat: 50.569,
-    lng: 22.052,
-    description: 'Wysoka częstotliwość kursów linii 1 i 10, lecz średnie napełnienie poniżej 15%. Klasyczny przypadek dublowania tras.',
-    efficiencyScore: 18
-  },
-  {
-    id: 'hsw',
-    name: 'Strefa Przemysłowa HSW',
-    lat: 50.555,
-    lng: 22.062,
-    description: 'Niedopasowanie godzin odjazdów do zmian pracowniczych. Autobusy jeżdżą puste między szczytami zmianowymi.',
-    efficiencyScore: 25
-  },
-  {
-    id: 'rozwadow',
-    name: 'Dzielnica Rozwadów',
-    lat: 50.590,
-    lng: 22.049,
-    description: 'Obszar o niskiej gęstości zaludnienia obsługiwany taborem wielkogabarytowym (12m). Wysokie koszty wozokilometra.',
-    efficiencyScore: 32
-  }
-];
-
 export default function WhiteSpotsView({
-  stops,
-  hoveredStopId,
-  setHoveredStopId,
-  selectedStop,
-  onStopSelect,
+  stops, hoveredStopId, setHoveredStopId, selectedStop, onStopSelect,
 }: WhiteSpotsViewProps) {
+  
+  // Stan do trzymania plam pobranych z backendu
+  const [whiteSpotsZones, setWhiteSpotsZones] = useState<WhiteSpotZone[]>([]);
+  
+  // Dynamiczny adres z VITE (lub przypisany na stałe adres z serwerów Render)
+  // Pamiętaj, aby podmienić ten awaryjny adres na Wasz docelowy URL z Rendera, jeśli nie macie go w .env!
+  const API_URL = import.meta.env.VITE_API_URL || "https://spacepathwarden-api.onrender.com";
+
   // Scenario days
   const [selectedDay, setSelectedDay] = useState<'monday' | 'wednesday' | 'saturday'>('monday');
   // Selected spot/stop for analysis
@@ -98,13 +66,14 @@ export default function WhiteSpotsView({
   const [showStops, setShowStops] = useState<boolean>(true);
   const [showLines, setShowLines] = useState<boolean>(true);
 
-  // Side panels toggle states (responsive drawers)
+  // Side panels toggle states
   const [isLayersOpen, setIsLayersOpen] = useState<boolean>(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
   const [isLegendOpen, setIsLegendOpen] = useState<boolean>(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
 
   // Loading state
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [analysisProgress, setAnalysisProgress] = useState<string>('');
+  
   // AI results state
   const [aiResult, setAiResult] = useState<{
     kpis: Array<{ title: string; value: string; desc: string; isAlert?: boolean }>;
@@ -115,6 +84,34 @@ export default function WhiteSpotsView({
   } | null>(null);
 
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  
+  // POBIERANIE BIAŁYCH PLAM Z BACKENDU PO ZAŁADOWANIU WIDOKU
+  useEffect(() => {
+    const fetchProblems = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/map/problems`);
+        if (!response.ok) throw new Error("Błąd pobierania anomalii z serwera");
+        
+        const geoData = await response.json();
+        
+        const fetchedZones: WhiteSpotZone[] = geoData.features.map((feature: any) => ({
+          id: String(feature.properties.id),
+          name: feature.properties.opis || `Anomalia #${feature.properties.id}`,
+          lat: feature.geometry.coordinates[1],
+          lng: feature.geometry.coordinates[0],
+          description: "Strefa wymagająca głębokiej interwencji analitycznej sztucznej inteligencji.",
+          efficiencyScore: 15 + Math.floor(Math.random() * 25) // Lekki fake dynamiki
+        }));
+        
+        setWhiteSpotsZones(fetchedZones);
+      } catch (error) {
+        console.error("Nie udało się połączyć z backendem Mapy:", error);
+      }
+    };
+
+    fetchProblems();
+  }, [API_URL]);
+
   useEffect(() => {
     const observer = new MutationObserver(() => {
       setIsDark(document.documentElement.classList.contains('dark'));
@@ -144,18 +141,15 @@ export default function WhiteSpotsView({
   const handleOptionSelect = async (optionId: number) => {
     if (!activeZone) return;
     
-    // Zamykamy modal i pokazujemy kręciołek
     setShowOptionsModal(false);
     setIsAnalyzing(true);
     setAiResult(null);
     setAnalysisProgress('Łączenie z silnikiem Gemini AI...');
 
-    // Tłumaczymy dzień tygodnia z frontendu na czytelny tekst dla AI
     const kontekst = selectedDay === 'monday' ? 'Poniedziałek (Szczyt poranny)' 
                    : selectedDay === 'wednesday' ? 'Środa (Szczyt popołudniowy)' 
                    : 'Sobota (Weekend)';
 
-    // Budujemy paczkę dla naszego backendu FastAPI
     const payload = {
       id_opcji: `opcja_${optionId}`,
       kontekst_czasowy: kontekst,
@@ -165,12 +159,6 @@ export default function WhiteSpotsView({
     };
 
     try {
-      console.log("🚀 Wysyłam zapytanie do API:", payload);
-      
-      // Prawdziwy strzał do Twojego działającego API
-      // Pobieranie URL backendu ze zmiennych środowiskowych Rendera
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-      
       console.log(`🚀 Wysyłam zapytanie do API na adres: ${API_URL}/api/analiza/generuj`, payload);
       
       const response = await fetch(`${API_URL}/api/analiza/generuj`, {
@@ -181,13 +169,11 @@ export default function WhiteSpotsView({
 
       if (!response.ok) throw new Error(`Błąd serwera: ${response.status}`);
 
-      // Odbieramy gotowego JSON-a od Gemini
       const aiData = await response.json();
       console.log("✅ Raport AI odebrany!", aiData);
 
-      // Wstrzykujemy dane do interfejsu (zostawiając makiety wykresów dla pięknego dema)
       setAiResult({
-        optionTitle: aiData.tytul_raportu || `Analiza AI`,
+        optionTitle: aiData.tytul_raportu || `Analiza AI (Opcja ${optionId})`,
         report: `### 🤖 Diagnoza Modelu AI\n${aiData.diagnoza_problemu}\n\n#### Rekomendacje Wdrożeniowe:\n${aiData.rekomendacja_dzialan}`,
         kpis: aiData.dane_do_wykresu ? aiData.dane_do_wykresu.map((d: any) => ({
           title: d.kategoria,
@@ -195,15 +181,16 @@ export default function WhiteSpotsView({
           desc: 'Wskazanie modelu',
           isAlert: typeof d.wartosc === 'number' && d.wartosc > 50
         })) : [],
+        // Subtelnie losujemy wartości potoków, aby wykresy świetnie się animowały po każdej zmianie opcji
         hourlyFlow: [
-          { time: '07:00', flowCount: 250, delayMinutes: 12 },
-          { time: '08:00', flowCount: 520, delayMinutes: 25 },
-          { time: '14:00', flowCount: 380, delayMinutes: 15 },
-          { time: '15:00', flowCount: 620, delayMinutes: 10 }
+          { time: '07:00', flowCount: 200 + Math.floor(Math.random()*100), delayMinutes: 12 },
+          { time: '08:00', flowCount: 500 + Math.floor(Math.random()*200), delayMinutes: 25 },
+          { time: '14:00', flowCount: 350 + Math.floor(Math.random()*150), delayMinutes: 15 },
+          { time: '15:00', flowCount: 600 + Math.floor(Math.random()*150), delayMinutes: 10 }
         ],
         zoneComparison: [
-          { zone: 'Obecna sytuacja', passengers: 200, capacity: 150 },
-          { zone: 'Rekomendacja AI', passengers: 450, capacity: 500 }
+          { zone: 'Obecna sytuacja', passengers: 150 + Math.floor(Math.random()*100), capacity: 150 },
+          { zone: 'Rekomendacja AI', passengers: 400 + Math.floor(Math.random()*100), capacity: 500 }
         ]
       });
 
@@ -211,19 +198,18 @@ export default function WhiteSpotsView({
       console.error("❌ Błąd podczas łączenia z AI:", error);
       setAiResult({
          optionTitle: "Błąd połączenia",
-         report: "Nie udało się połączyć z backendem. Upewnij się, że serwer FastAPI jest włączony na porcie 8000.",
+         report: "Nie udało się połączyć z backendem. Upewnij się, że serwer API odpowiada.",
          kpis: [], hourlyFlow: [], zoneComparison: []
       });
     } finally {
       setIsAnalyzing(false);
-      // Przewijanie do wyniku
       setTimeout(() => {
         document.getElementById('ai-results-panel')?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     }
   };
 
-  const primaryColor = '#10b981'; // emerald-500
+  const primaryColor = '#10b981';
   const lightGrayColor = isDark ? '#475569' : '#94a3b8';
   const gridLineColor = isDark ? 'rgba(71, 85, 105, 0.15)' : 'rgba(226, 232, 240, 0.6)';
 
@@ -259,6 +245,25 @@ export default function WhiteSpotsView({
             <span>Nałóż wycinek TIF (Satelita AI)</span>
           </button>
 
+          {/* Day Scenario Toggler */}
+          <div className="flex items-center space-x-1.5 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200/50 dark:border-white/10">
+            {[
+              { id: 'monday' as const, label: 'Poniedziałek (Szczyt poranny)' },
+              { id: 'wednesday' as const, label: 'Środa (Szczyt popołudniowy)' },
+              { id: 'saturday' as const, label: 'Sobota (Weekend)' },
+            ].map((day) => (
+              <button
+                key={day.id}
+                onClick={() => { setSelectedDay(day.id); setAiResult(null); }}
+                className={`rounded-lg px-3 py-1.5 text-[10.5px] font-bold transition-all whitespace-nowrap ${selectedDay === day.id
+                  ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
+                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'
+                  }`}
+              >
+                {day.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -274,7 +279,7 @@ export default function WhiteSpotsView({
               <ShieldAlert className="h-4 w-4 text-cyan-500 mr-1.5" /> Wykryte anomalie komunikacyjne
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {WHITE_SPOT_ZONES.map((zone) => (
+              {whiteSpotsZones.map((zone) => (
                 <button
                   key={zone.id}
                   onClick={() => handleZoneSelect(zone)}
@@ -499,7 +504,6 @@ export default function WhiteSpotsView({
                 </div>
 
                 <div className="space-y-4 text-left animate-fade-in">
-                  {/* Obciążenie taboru (zawsze widoczne w legendzie) */}
                   <div className="space-y-2 pb-3 border-b border-white/5">
                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Natężenie ruchu (Stalowa Wola)</span>
                     <div className="grid grid-cols-1 gap-1.5 text-[10.5px]">
@@ -518,7 +522,6 @@ export default function WhiteSpotsView({
                     </div>
                   </div>
 
-                  {/* Informacja o warstwach analitycznych */}
                   {!showBus369 && !showPieszo51015 && (
                     <p className="text-[10px] text-slate-400 leading-relaxed italic">
                       Włącz warstwy analityczne (Autobus lub Pieszy) w panelu warstw, aby zobaczyć izochrony i wchodzić w interakcję z mapą.
@@ -802,4 +805,3 @@ export default function WhiteSpotsView({
     </div>
   );
 }
-
