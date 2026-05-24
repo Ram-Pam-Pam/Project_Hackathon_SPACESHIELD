@@ -1,0 +1,40 @@
+{
+  "podsumowanie_obszaru": "Obszar analizy charakteryzuje się rozproszoną zabudową mieszkalną (osiedla) i znaczną liczbą obiektów niemieszkalnych, w tym handlowo-usługowych i magazynowych, które są kluczowe dla lokalnej gospodarki. Przez środek obszaru przebiega ruchliwa droga wojewódzka nr 871, pełniąca funkcję głównej arterii komunikacyjnej. Mimo obecności licznych dróg gminnych i wewnętrznych, infrastruktura piesza jest fragmentaryczna i nie tworzy spójnej, bezpiecznej sieci, co negatywnie wpływa na dostępność i mobilność pieszych. Wiele obszarów wydaje się być zorientowanych na ruch samochodowy, z marginalizacją potrzeb pieszych, co prowadzi do realnego wykluczenia komunikacyjnego dla mieszkańców i użytkowników obiektów.",
+  "wykryte_anomalie": [
+    "Brak ciągłości i bezpieczeństwa infrastruktury pieszej wzdłuż Drogi Wojewódzkiej 871: Wiele odcinków głównej drogi wojewódzkiej (APZC, AQFQ, AQDU, APZD, AQCN) charakteryzuje się brakiem spójnych chodników lub ich zmienną szerokością i materiałem, co utrudnia bezpieczne poruszanie się pieszych i dostęp do pobliskich obiektów komercyjnych.",
+    "Słaba integracja infrastruktury pieszej z dużymi obiektami handlowo-usługowymi: Kluczowe obiekty takie jak salony samochodowe (Toyota - AEGC), centra handlowe (Frac - ABGH) czy magazyny (hurtownia Polmos - AEAV) nie posiadają odpowiednio rozwiniętych i połączonych chodników, co zmusza pieszych do korzystania z niebezpiecznych stref parkingowych lub jezdni.",
+    "Fragmentaryczność sieci chodników na osiedlach mieszkaniowych: Pomimo istnienia wielu dróg wewnętrznych i gminnych na osiedlach, sieć chodników jest często przerywana, ma zróżnicowaną szerokość (np. 1.0-1.5m, co jest zbyt mało) lub kończy się nagle, utrudniając płynny i bezpieczny ruch pieszych między budynkami a punktami usługowymi czy komunikacją publiczną (jeśli istnieje). Dotyczy to również dostępu do placówek oświatowych, takich jak Przedszkole nr 15 (AEDJ)."
+  ],
+  "szczegoly_obiektow": [
+    {
+      "id": "AEGC",
+      "status": "eksploatowany, budynek handlowo-usługowy, dom towarowy lub handlowy (Toyota)",
+      "wnioski": "Duży salon samochodowy generujący znaczny ruch. Otoczenie obiektu wymaga pilnej poprawy infrastruktury pieszej. Brak spójnych chodników łączących obiekt z główną drogą wojewódzką 871 oraz z pobliskimi obszarami mieszkalnymi, co tworzy niebezpieczne warunki dla pieszych i zwiększa wykluczenie komunikacyjne."
+    },
+    {
+      "id": "ABGH",
+      "status": "eksploatowany, budynek handlowo-usługowy, dom towarowy lub handlowy (Frac)",
+      "wnioski": "Centrum handlowe w bezpośrednim sąsiedztwie salonu Toyota. Podobnie jak AEGC, obiekt ten jest słabo zintegrowany z siecią chodników, co pogłębia problem braku bezpieczeństwa pieszych w rejonie o wysokim natężeniu ruchu kołowego. Konieczne jest stworzenie spójnego systemu chodników w całym kompleksie handlowym."
+    },
+    {
+      "id": "AEAV",
+      "status": "eksploatowany, zbiornik/silos/budynek magazynowy, magazyn (hurtownia Polmos)",
+      "wnioski": "Duży obiekt magazynowy, który generuje intensywny ruch pojazdów dostawczych. Należy zapewnić bezpieczny dostęp pieszy dla pracowników i oddzielenie go od ruchu ciężarowego. Obecna infrastruktura piesza w okolicy jest niewystarczająca i fragmentaryczna, co stanowi problem bezpieczeństwa."
+    },
+    {
+      "id": "ACTQ",
+      "status": "eksploatowany, budynek handlowo-usługowy, dom towarowy lub handlowy (Auto-expres)",
+      "wnioski": "Obiekt handlowo-usługowy zlokalizowany w północno-wschodniej części obszaru. Pomimo lokalizacji przy jednej z głównych dróg obszaru, sieć chodników wokół obiektu jest nieciągła, co utrudnia bezpieczny dostęp dla klientów i pracowników, zwiększając ryzyko wypadków."
+    },
+    {
+      "id": "AEDJ",
+      "status": "eksploatowany, budynek oświaty, nauki i kultury, przedszkole (Przedszkole nr 15 w Stalowej Woli)",
+      "wnioski": "Kluczowa placówka oświatowa. Chociaż w bezpośrednim sąsiedztwie znajdują się chodniki, należy zweryfikować ciągłość i bezpieczeństwo wszystkich ścieżek dostępu dla dzieci i rodziców. Fragmentaryczność chodników w szerszym otoczeniu może negatywnie wpływać na wybór bezpiecznej trasy do placówki."
+    },
+    {
+      "id": "Droga Wojewódzka 871 (segmenty: APZC, AQFQ, AQDU, APZD, AQCN)",
+      "status": "eksploatowany, droga wojewódzka, droga główna ruchu przyśpieszonego",
+      "wnioski": "Główna arteria komunikacyjna obszaru. Jej dwujezdniowy charakter i wysokie natężenie ruchu wymagają spójnej i bezpiecznej infrastruktury pieszej po obu stronach. Obecnie występują liczne luki i nieciągłości w sieci chodników wzdłuż tej drogi, co stanowi barierę dla pieszych i zwiększa ryzyko wypadków. Wymagana jest kompleksowa modernizacja i uzupełnienie brakujących odcinków chodników."
+    }
+  ]
+}

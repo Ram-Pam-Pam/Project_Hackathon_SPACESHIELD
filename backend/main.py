@@ -21,3 +21,5 @@ app.include_router(export_api.router)
 @app.get("/")
 def home():
     return {"status": "Backend działa!"}
+
+
