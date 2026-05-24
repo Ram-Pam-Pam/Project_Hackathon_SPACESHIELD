@@ -66,16 +66,17 @@ def pobierz_kontekst_kategorii(kategoria: str | None) -> str:
     instrukcja = opisy.get(kategoria, "Analizuj obszar pod kątem transportowym.")
     return f"UWAGA: {instrukcja} Analiza ma być zwięzła, konkretna i ściśle ukierunkowana na ten jeden problem."
 
-def analizuj_surowe_zdjecie(sciezka_do_zdjecia: str, json_path: str, kategoria: str = None) -> dict:
+def analizuj_surowe_zdjecie(sciezka_do_zdjecia: str, json_path: str, kategoria: str = None, lat: float = None, lng: float = None) -> dict:
     img = Image.open(sciezka_do_zdjecia)
     with open(json_path, encoding='utf-8') as f:
         dane_json = json.load(f)
 
     kontekst = pobierz_kontekst_kategorii(kategoria)
+    kontekst_lokalizacji = f"\nAnaliza dotyczy bezpośredniego otoczenia współrzędnych geograficznych: {lat}, {lng}. Dostosuj wnioski specjalnie pod specyfikę tej lokalizacji." if lat and lng else ""
 
     prompt = f"""
 Jesteś profesjonalnym analitykiem danych przestrzennych.
-Ten obszar został wyznaczony jako wykluczony komunikacyjnie.
+Ten obszar został wyznaczony jako wykluczony komunikacyjnie.{kontekst_lokalizacji}
 - Czerwony kolor = budynki niemieszkalne
 - Niebieski kolor = chodniki
 - Fioletowy/Żółty = drogi
@@ -100,15 +101,16 @@ W przypadku budynków ze znaną nazwą podawaj ją.
         "wykryte_anomalie": []
     }
 
-def ekstrahuj_kluczowe_obiekty(sciezka_do_zdjecia: str, json_path: str, kategoria: str = None) -> list:
+def ekstrahuj_kluczowe_obiekty(sciezka_do_zdjecia: str, json_path: str, kategoria: str = None, lat: float = None, lng: float = None) -> list:
     img = Image.open(sciezka_do_zdjecia)
     with open(json_path, encoding='utf-8') as f:
         dane_json = json.load(f)
 
     kontekst = pobierz_kontekst_kategorii(kategoria)
+    kontekst_lokalizacji = f"\nZwróć szczególną uwagę na obiekty w rejonie współrzędnych: {lat}, {lng}." if lat and lng else ""
 
     prompt = f"""
-Wyznacz kluczowe obiekty z tego obszaru o największym negatywnym wpływie na wykluczenie komunikacyjne, możliwe do poprawy na poziomie miasta.
+Wyznacz kluczowe obiekty z tego obszaru o największym negatywnym wpływie na wykluczenie komunikacyjne, możliwe do poprawy na poziomie miasta.{kontekst_lokalizacji}
 {kontekst}
 
 Zwróć wynik TYLKO jako JSON (bez markdown, bez komentarzy) będący LISTĄ OBIEKTÓW w formacie:
