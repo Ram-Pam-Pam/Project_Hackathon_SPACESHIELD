@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Stop } from '../types';
 import MapMockup from './MapMockup';
-import { MapPin, Activity, Users, Zap, Layers, Info } from 'lucide-react';
+import { MapPin, Activity, Layers, Info } from 'lucide-react';
 
 interface OverviewViewProps {
   stops: Stop[];
@@ -22,13 +22,10 @@ export default function OverviewView({
 }: OverviewViewProps) {
   const [activeLayer, setActiveLayer] = useState<LayerMode>('standard');
 
-  const highTrafficStops = stops.filter((s) => s.intensity === 'high');
-  const totalPassengers = stops.reduce((sum, s) => sum + s.dailyPassengers, 0);
-
   return (
     <div className="flex min-h-[calc(100vh-6.5rem)] lg:h-[calc(100vh-6.5rem)] flex-col lg:flex-row bg-slate-50 dark:bg-slate-950" id="view-1-main-map">
       {/* Informative Side Panel (Apple & Linear styled) */}
-      <div className="w-full border-b border-slate-200 bg-white p-6 transition-colors duration-300 dark:border-slate-800 dark:bg-slate-950 lg:w-[380px] lg:border-r lg:border-b-0 flex flex-col justify-between lg:overflow-y-auto">
+      <div className="w-full border-b border-slate-200 bg-white p-6 transition-colors duration-300 dark:border-slate-800 dark:bg-slate-950 lg:w-[380px] lg:border-r lg:border-b-0 flex flex-col justify-between lg:overflow-y-auto shrink-0">
         <div className="space-y-6">
           {/* Header */}
           <div className="space-y-2">
@@ -65,11 +62,10 @@ export default function OverviewView({
                 <button
                   key={layer.id}
                   onClick={() => setActiveLayer(layer.id)}
-                  className={`rounded-xl px-3 py-2 text-xs font-semibold border transition-all ${
-                    activeLayer === layer.id
-                      ? 'bg-slate-900 border-slate-900 text-white dark:bg-white dark:border-white dark:text-slate-950 shadow-sm'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800 dark:bg-slate-900 dark:border-white/5 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
-                  }`}
+                  className={`rounded-xl px-3 py-2 text-xs font-semibold border transition-all ${activeLayer === layer.id
+                    ? 'bg-slate-900 border-slate-900 text-white dark:bg-white dark:border-white dark:text-slate-950 shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800 dark:bg-slate-900 dark:border-white/5 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
+                    }`}
                 >
                   {layer.label}
                 </button>
@@ -90,7 +86,7 @@ export default function OverviewView({
                   <h4 className="text-lg font-bold text-slate-950 dark:text-white leading-tight mt-0.5">{selectedStop.name}</h4>
                   <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">{selectedStop.street}</p>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200/50 dark:border-white/5">
                     <span className="text-[9px] font-bold text-slate-400 block">Potok pasażerski</span>
@@ -137,27 +133,11 @@ export default function OverviewView({
             )}
           </div>
         </div>
-
-        {/* Quick Stats Footer */}
-        <div className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-800 bg-transparent grid grid-cols-2 gap-4">
-          <div>
-            <span className="text-[9px] font-bold uppercase text-slate-400 block">Łączny potok</span>
-            <span className="text-sm font-extrabold font-mono text-slate-900 dark:text-white">
-              {totalPassengers.toLocaleString()}
-            </span>
-          </div>
-          <div>
-            <span className="text-[9px] font-bold uppercase text-slate-400 block">Krytyczne strefy</span>
-            <span className="text-sm font-extrabold font-mono text-rose-500">
-              {highTrafficStops.length} hotspots
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Vector interactive Map Frame */}
-      <div className="flex-1 p-3 sm:p-4 lg:p-6 flex flex-col relative bg-slate-50 dark:bg-slate-950">
-        <div className="mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex-1 p-3 sm:p-4 lg:p-6 flex flex-col relative bg-slate-50 dark:bg-slate-950 w-full">
+        <div className="mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center tracking-tight">
               <MapPin className="mr-2 h-4.5 w-4.5 text-emerald-500" />
@@ -169,8 +149,8 @@ export default function OverviewView({
           </div>
         </div>
 
-        {/* The interactive MapLibre map component */}
-        <div className="flex-1 relative min-h-[400px] border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+        {/* Kontener mapy */}
+        <div className="relative w-full h-[500px] lg:h-auto lg:flex-1 min-h-[400px] border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
           <MapMockup
             stops={stops}
             activeLayer={activeLayer}
