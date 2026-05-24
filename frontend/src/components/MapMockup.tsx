@@ -1,6 +1,7 @@
-
 import mojNowyGeoJSON from '../data/dashboard.json';
 import przystankiGeoJSON from '../data/przystanki.json';
+import bus369GeoJSON from '../data/bus_369.json';
+import pieszo51015GeoJSON from '../data/pieszo_51015.json';
 import { Navigation, ChevronRight } from 'lucide-react';
 import maplibregl from 'maplibre-gl';
 // @ts-ignore
@@ -20,6 +21,15 @@ interface MapMockupProps {
   selectedStop?: Stop | null;
   showTifOverlay?: boolean;
   tifOverlayCoords?: { lng: number; lat: number } | null;
+  showBus369?: boolean;
+  showPieszo51015?: boolean;
+  activeLegendInterval?: { layer: 'bus_369' | 'pieszo_51015'; interval: string } | null;
+  showStops?: boolean;
+  showLines?: boolean;
+  hoverCtaLabel?: string;
+  showTrafficLoadLegend?: boolean;
+  onMapClickAnalysis?: (coords: { lat: number; lng: number }) => void;
+  popupCtaLabel?: string;
 }
 
 interface DynamicStop {
@@ -162,16 +172,31 @@ export default function MapMockup({
   selectedStop = null,
   showTifOverlay = false,
   tifOverlayCoords = null,
+  showBus369 = false,
+  showPieszo51015 = false,
+  activeLegendInterval = null,
+  showStops = true,
+  showLines = true,
+  hoverCtaLabel = 'Analiza',
+  showTrafficLoadLegend = true,
+  onMapClickAnalysis,
+  popupCtaLabel = 'Przejdź do analizy →',
 }: MapMockupProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Record<string, maplibregl.Marker>>({});
+
+  const onMapClickAnalysisRef = useRef(onMapClickAnalysis);
+  onMapClickAnalysisRef.current = onMapClickAnalysis;
 
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [selectedLine, setSelectedLine] = useState<string | null>(null);
 
   const isDarkRef = useRef(isDark);
   const activeLayerRef = useRef(activeLayer);
+  const showBus369Ref = useRef(showBus369);
+  const showPieszo51015Ref = useRef(showPieszo51015);
+  const showLinesRef = useRef(showLines);
 
   useEffect(() => {
     isDarkRef.current = isDark;
@@ -180,6 +205,18 @@ export default function MapMockup({
   useEffect(() => {
     activeLayerRef.current = activeLayer;
   }, [activeLayer]);
+
+  useEffect(() => {
+    showBus369Ref.current = showBus369;
+  }, [showBus369]);
+
+  useEffect(() => {
+    showPieszo51015Ref.current = showPieszo51015;
+  }, [showPieszo51015]);
+
+  useEffect(() => {
+    showLinesRef.current = showLines;
+  }, [showLines]);
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
@@ -213,6 +250,46 @@ export default function MapMockup({
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
 
+    map.on('click', (e) => {
+      if (onMapClickAnalysisRef.current) {
+        const popups = document.querySelectorAll('.maplibregl-popup');
+        popups.forEach((p) => p.remove());
+
+        const popupNode = document.createElement('div');
+        popupNode.className = 'p-3 rounded-xl bg-slate-900/95 dark:bg-slate-950/95 text-white border border-slate-700/50 shadow-2xl backdrop-blur-md min-w-[120px] text-center font-sans';
+        popupNode.innerHTML = `
+          <button id="map-custom-analysis-btn" class="w-full text-center bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-extrabold text-[12px] py-1.5 px-4 rounded-xl shadow-lg cursor-pointer transition-all active:scale-[0.97]">
+            Analizuj
+          </button>
+        `;
+
+        const newPopup = new maplibregl.Popup({
+          closeButton: false,
+          closeOnClick: true,
+          anchor: 'bottom',
+          offset: [0, -5]
+        })
+          .setLngLat(e.lngLat)
+          .setDOMContent(popupNode)
+          .addTo(map);
+
+        popupNode.querySelector('#map-custom-analysis-btn')?.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          newPopup.remove();
+          onMapClickAnalysisRef.current?.({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+        });
+      }
+    });
+
+    // ====================================================
+    // DODANO: ResizeObserver naprawiający renderowanie na mobile
+    // ====================================================
+    const resizeObserver = new ResizeObserver(() => {
+      map.resize();
+    });
+    resizeObserver.observe(mapContainerRef.current);
+    // ====================================================
+
     map.on('style.load', () => {
       // 1. Dodajemy Twoje prawdziwe dane GeoJSON dla linii
       map.addSource('transit-routes', {
@@ -228,7 +305,8 @@ export default function MapMockup({
         filter: ['any', ['==', ['geometry-type'], 'LineString'], ['==', ['geometry-type'], 'MultiLineString']],
         layout: {
           'line-join': 'round',
-          'line-cap': 'round'
+          'line-cap': 'round',
+          'visibility': showLinesRef.current ? 'visible' : 'none'
         },
         paint: {
           'line-color': isDarkRef.current ? '#020617' : '#ffffff',
@@ -245,7 +323,8 @@ export default function MapMockup({
         filter: ['any', ['==', ['geometry-type'], 'LineString'], ['==', ['geometry-type'], 'MultiLineString']],
         layout: {
           'line-join': 'round',
-          'line-cap': 'round'
+          'line-cap': 'round',
+          'visibility': showLinesRef.current ? 'visible' : 'none'
         },
         paint: {
           // Domyślne kolory linii przed kliknięciem w dymek
@@ -387,9 +466,112 @@ export default function MapMockup({
           }
         });
       }
+
+      // Add bus_369 source and layers
+      try {
+        map.addSource('bus_369', {
+          type: 'geojson',
+          data: bus369GeoJSON as any
+        });
+
+        map.addLayer({
+          id: 'bus_369-fill',
+          type: 'fill',
+          source: 'bus_369',
+          paint: {
+            'fill-color': [
+              'match',
+              ['get', 'Name'],
+              '0 - 3', 'rgba(16, 185, 129, 0.45)', // emerald
+              '3 - 6', 'rgba(6, 182, 212, 0.35)',  // cyan
+              '6 - 9', 'rgba(59, 130, 246, 0.2)',   // blue
+              'rgba(16, 185, 129, 0.2)'
+            ]
+          },
+          layout: {
+            visibility: showBus369Ref.current ? 'visible' : 'none'
+          }
+        }, labelLayerId);
+
+        map.addLayer({
+          id: 'bus_369-stroke',
+          type: 'line',
+          source: 'bus_369',
+          paint: {
+            'line-color': [
+              'match',
+              ['get', 'Name'],
+              '0 - 3', '#10b981',
+              '3 - 6', '#06b6d4',
+              '6 - 9', '#3b82f6',
+              '#10b981'
+            ],
+            'line-width': 1.5,
+            'line-opacity': 0.6
+          },
+          layout: {
+            visibility: showBus369Ref.current ? 'visible' : 'none'
+          }
+        }, labelLayerId);
+      } catch (e) {
+        console.warn("Failed to load bus_369 layer", e);
+      }
+
+      // Add pieszo_51015 source and layers
+      try {
+        map.addSource('pieszo_51015', {
+          type: 'geojson',
+          data: pieszo51015GeoJSON as any
+        });
+
+        map.addLayer({
+          id: 'pieszo_51015-fill',
+          type: 'fill',
+          source: 'pieszo_51015',
+          paint: {
+            'fill-color': [
+              'match',
+              ['get', 'Name'],
+              '0 - 5', 'rgba(245, 158, 11, 0.45)',  // amber
+              '5 - 10', 'rgba(249, 115, 22, 0.35)', // orange
+              '10 - 15', 'rgba(239, 68, 68, 0.2)',  // rose
+              'rgba(245, 158, 11, 0.2)'
+            ]
+          },
+          layout: {
+            visibility: showPieszo51015Ref.current ? 'visible' : 'none'
+          }
+        }, labelLayerId);
+
+        map.addLayer({
+          id: 'pieszo_51015-stroke',
+          type: 'line',
+          source: 'pieszo_51015',
+          paint: {
+            'line-color': [
+              'match',
+              ['get', 'Name'],
+              '0 - 5', '#f59e0b',
+              '5 - 10', '#f97316',
+              '10 - 15', '#ef4444',
+              '#f59e0b'
+            ],
+            'line-width': 1.5,
+            'line-opacity': 0.6
+          },
+          layout: {
+            visibility: showPieszo51015Ref.current ? 'visible' : 'none'
+          }
+        }, labelLayerId);
+      } catch (e) {
+        console.warn("Failed to load pieszo_51015 layer", e);
+      }
     });
 
     return () => {
+      // --- DODANO: Czyszczenie obserwatora ---
+      resizeObserver.disconnect();
+      // ---------------------------------------
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -402,7 +584,13 @@ export default function MapMockup({
 
     const currentMarkers: maplibregl.Marker[] = [];
 
-    dynamicStops.forEach((stop) => {
+    if (!showStops) {
+      const popups = document.querySelectorAll('.maplibregl-popup');
+      popups.forEach((p) => p.remove());
+    }
+
+    if (showStops) {
+      dynamicStops.forEach((stop) => {
       const coords = { lng: stop.lng, lat: stop.lat };
 
       const isHigh = stop.intensity === 'high';
@@ -412,34 +600,34 @@ export default function MapMockup({
       const el = document.createElement('div');
       el.id = `map-stop-marker-${stop.id}`;
       el.className = 'relative flex items-center justify-center cursor-pointer marker-container';
-      el.style.width = '52px';
-      el.style.height = '52px';
+      el.style.width = '40px';
+      el.style.height = '40px';
       el.style.transition = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)';
 
-      let baseColorClass = 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]';
+      let baseColorClass = 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]';
       let ringColorClass = 'bg-emerald-500/15';
       let pulseRingClass = '';
 
       if (isHigh) {
-        baseColorClass = 'bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.6)]';
+        baseColorClass = 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.6)]';
         ringColorClass = 'bg-rose-500/20';
-        pulseRingClass = 'absolute w-10 h-10 rounded-full animate-ping opacity-60 bg-rose-500/25';
+        pulseRingClass = 'absolute w-8 h-8 rounded-full animate-ping opacity-60 bg-rose-500/25';
       } else if (isMedium) {
-        baseColorClass = 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.55)]';
+        baseColorClass = 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.55)]';
         ringColorClass = 'bg-amber-500/15';
-        pulseRingClass = 'absolute w-8 h-8 rounded-full animate-ping opacity-50 bg-amber-500/20';
+        pulseRingClass = 'absolute w-6 h-6 rounded-full animate-ping opacity-50 bg-amber-500/20';
       }
 
       if (isHovered) {
         el.style.transform = 'scale(1.3)';
-        pulseRingClass = `absolute w-12 h-12 rounded-full animate-pulse opacity-80 ${isHigh ? 'bg-rose-500/40' : isMedium ? 'bg-amber-500/35' : 'bg-emerald-400/30'}`;
+        pulseRingClass = `absolute w-9 h-9 rounded-full animate-pulse opacity-80 ${isHigh ? 'bg-rose-500/40' : isMedium ? 'bg-amber-500/35' : 'bg-emerald-400/30'}`;
       }
 
       el.innerHTML = `
         <div class="absolute inset-0 flex items-center justify-center">
           ${pulseRingClass ? `<div class="${pulseRingClass}"></div>` : ''}
-          <div class="relative w-8 h-8 rounded-full ${ringColorClass} border border-white/5 flex items-center justify-center transition-transform duration-300 ${isHovered ? 'scale-120' : 'hover:scale-110'}">
-            <div class="w-4 h-4 rounded-full ${baseColorClass} border border-white flex items-center justify-center shadow-lg">
+          <div class="relative w-6 h-6 rounded-full ${ringColorClass} border border-white/5 flex items-center justify-center transition-transform duration-300 ${isHovered ? 'scale-120' : 'hover:scale-110'}">
+            <div class="w-3.5 h-3.5 rounded-full ${baseColorClass} border border-white flex items-center justify-center shadow-lg">
               <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
             </div>
           </div>
@@ -492,7 +680,7 @@ export default function MapMockup({
             </div>
           </div>
           <button id="popup-btn-${stop.id}" class="w-full text-center bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-extrabold text-[11px] py-2 px-4 rounded-xl shadow-lg shadow-emerald-500/15 cursor-pointer transition-all active:scale-[0.97]">
-            Przejdź do analizy →
+            ${popupCtaLabel}
           </button>
         `;
 
@@ -537,11 +725,12 @@ export default function MapMockup({
       currentMarkers.push(marker);
       markersRef.current[stop.id] = marker;
     });
+    }
 
     return () => {
       currentMarkers.forEach(m => m.remove());
     };
-  }, [hoveredStopId, isDarkRef.current]);
+  }, [hoveredStopId, isDarkRef.current, showStops]);
 
   // Smooth slide and center camera when hovered stop changes
   useEffect(() => {
@@ -656,6 +845,88 @@ export default function MapMockup({
     }
   }, [selectedLine]); // Nasłuchujemy teraz tylko zmian klikniętej linii!
 
+  // Dynamic update of layer visibility
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    try {
+      if (map.getLayer('bus_369-fill')) {
+        map.setLayoutProperty('bus_369-fill', 'visibility', showBus369 ? 'visible' : 'none');
+        map.setLayoutProperty('bus_369-stroke', 'visibility', showBus369 ? 'visible' : 'none');
+      }
+      if (map.getLayer('pieszo_51015-fill')) {
+        map.setLayoutProperty('pieszo_51015-fill', 'visibility', showPieszo51015 ? 'visible' : 'none');
+        map.setLayoutProperty('pieszo_51015-stroke', 'visibility', showPieszo51015 ? 'visible' : 'none');
+      }
+    } catch (e) {
+      console.warn("Failed to update layer visibility", e);
+    }
+  }, [showBus369, showPieszo51015]);
+
+  // Dynamic update of layer opacity/highlighting based on active legend interval
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    try {
+      if (map.getLayer('bus_369-fill')) {
+        if (activeLegendInterval && activeLegendInterval.layer === 'bus_369') {
+          map.setPaintProperty('bus_369-fill', 'fill-opacity', [
+            'case',
+            ['==', ['get', 'Name'], activeLegendInterval.interval], 0.75,
+            0.05
+          ]);
+          map.setPaintProperty('bus_369-stroke', 'line-opacity', [
+            'case',
+            ['==', ['get', 'Name'], activeLegendInterval.interval], 0.8,
+            0.1
+          ]);
+        } else {
+          map.setPaintProperty('bus_369-fill', 'fill-opacity', 1.0);
+          map.setPaintProperty('bus_369-stroke', 'line-opacity', 0.6);
+        }
+      }
+
+      if (map.getLayer('pieszo_51015-fill')) {
+        if (activeLegendInterval && activeLegendInterval.layer === 'pieszo_51015') {
+          map.setPaintProperty('pieszo_51015-fill', 'fill-opacity', [
+            'case',
+            ['==', ['get', 'Name'], activeLegendInterval.interval], 0.75,
+            0.05
+          ]);
+          map.setPaintProperty('pieszo_51015-stroke', 'line-opacity', [
+            'case',
+            ['==', ['get', 'Name'], activeLegendInterval.interval], 0.8,
+            0.1
+          ]);
+        } else {
+          map.setPaintProperty('pieszo_51015-fill', 'fill-opacity', 1.0);
+          map.setPaintProperty('pieszo_51015-stroke', 'line-opacity', 0.6);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to highlight active legend category", e);
+    }
+  }, [activeLegendInterval]);
+
+  // Dynamic update of transit lines visibility
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    try {
+      if (map.getLayer('transit-lines')) {
+        map.setLayoutProperty('transit-lines', 'visibility', showLines ? 'visible' : 'none');
+      }
+      if (map.getLayer('transit-lines-case')) {
+        map.setLayoutProperty('transit-lines-case', 'visibility', showLines ? 'visible' : 'none');
+      }
+    } catch (e) {
+      console.warn("Failed to update transit lines visibility", e);
+    }
+  }, [showLines]);
+
   return (
     <div className="relative h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 transition-all dark:border-slate-800 dark:bg-slate-950 shadow-lg">
       <div
@@ -674,25 +945,27 @@ export default function MapMockup({
         </div>
       </div>
 
-      <div className="absolute right-4 top-4 z-10 hidden sm:flex flex-col space-y-1.5 rounded-xl border border-white/10 bg-slate-950/80 p-3 shadow-2xl backdrop-blur-xl pointer-events-none">
-        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
-          Obciążenie taboru
-        </span>
-        <div className="flex items-center space-x-3 text-[10.5px]">
-          <div className="flex items-center space-x-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-rose-500 ring-4 ring-rose-500/20 animate-pulse"></span>
-            <span className="font-bold text-slate-200">Wysokie</span>
-          </div>
-          <div className="flex items-center space-x-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-amber-500 ring-4 ring-amber-500/20"></span>
-            <span className="font-bold text-slate-200">Średnie</span>
-          </div>
-          <div className="flex items-center space-x-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"></span>
-            <span className="font-bold text-slate-200">Niskie</span>
+      {showTrafficLoadLegend && (
+        <div className="absolute right-4 top-4 z-10 hidden sm:flex flex-col space-y-1.5 rounded-xl border border-white/10 bg-slate-950/80 p-3 shadow-2xl backdrop-blur-xl pointer-events-none">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
+            Obciążenie taboru
+          </span>
+          <div className="flex items-center space-x-3 text-[10.5px]">
+            <div className="flex items-center space-x-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-rose-500 ring-4 ring-rose-500/20 animate-pulse"></span>
+              <span className="font-bold text-slate-200">Wysokie</span>
+            </div>
+            <div className="flex items-center space-x-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-500 ring-4 ring-amber-500/20"></span>
+              <span className="font-bold text-slate-200">Średnie</span>
+            </div>
+            <div className="flex items-center space-x-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"></span>
+              <span className="font-bold text-slate-200">Niskie</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {hoveredStopId && (
         <div className="absolute bottom-4 left-4 right-4 z-10 rounded-2xl border border-white/10 bg-slate-950/90 p-4 shadow-2xl backdrop-blur-xl transition-all duration-300 sm:left-4 sm:right-auto sm:max-w-sm animate-fade-in">
@@ -724,7 +997,7 @@ export default function MapMockup({
                     Pasażerowie: <strong className="font-mono text-slate-200 font-bold">{stop.dailyPassengers.toLocaleString()} / dobę</strong>
                   </span>
                   <span className="flex items-center font-bold text-emerald-400 cursor-pointer hover:text-emerald-300 transition-colors" onClick={() => onStopClick(stop as unknown as Stop)}>
-                    Analiza <ChevronRight className="ml-0.5 h-3 w-3" />
+                    {hoverCtaLabel} <ChevronRight className="ml-0.5 h-3 w-3" />
                   </span>
                 </div>
               </div>
@@ -735,4 +1008,3 @@ export default function MapMockup({
     </div>
   );
 }
-

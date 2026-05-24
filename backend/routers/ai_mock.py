@@ -1,30 +1,34 @@
 from fastapi import APIRouter
-import os
-from utils.gemini_agent import analizuj_surowe_zdjecie
+from pydantic import BaseModel
+from typing import Optional
+from utils.gemini_agent import analizuj_biala_plame
 
-router = APIRouter(prefix="/api/test-ai", tags=["Testy AI"])
+# Nazwa w dokumentacji nadal będzie ładna, mimo nazwy pliku
+router = APIRouter(prefix="/api/analiza", tags=["Analiza Białych Plam i Mapy"])
 
-@router.get("/raw-vision")
-async def testuj_wizje_gemini():
+class ZadanieAnalizy(BaseModel):
+    id_opcji: str
+    kontekst_czasowy: str = "Brak specyficznej pory"
+    id_plamy: Optional[str] = None  # Wypełniane, gdy klikną gotową plamę
+    lat: Optional[float] = None     # Wypełniane, gdy klikną "gdziekolwiek" na mapie
+    lng: Optional[float] = None     # Wypełniane, gdy klikną "gdziekolwiek" na mapie
+
+@router.post("/generuj")
+async def generuj_raport(request: ZadanieAnalizy):
     """
-    Bierze pierwsze lepsze zdjęcie z folderu data/images/ i wysyła do AI.
+    Odbiera zadanie z Frontendu. Obsługuje i gotowe Białe Plamy, i kliknięcia gdziekolwiek.
     """
-    # Szukamy folderu ze zdjęciami
-    IMAGE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "images")
+    # Tymczasowe zdjęcie awaryjne - do testów z frontendem (później tu wepniecie Geoportal)
+    sciezka_zdjecia = "data/images/sat_50.5826_22.0536.jpg" 
     
-    # Pobieramy pierwszy plik .jpg, jaki tam leży
-    pliki = [f for f in os.listdir(IMAGE_DIR) if f.endswith(".jpg")]
-    
-    if not pliki:
-        return {"błąd": "Najpierw pobierz jakieś zdjęcie mapboxem!"}
+    if request.lat and request.lng:
+        print(f"[API] Analiza dynamiczna dla współrzędnych: {request.lat}, {request.lng}")
+        # TUTAJ PÓŹNIEJ DODAMY: sciezka_zdjecia = pobierz_wcs_geoportal(request.lat, request.lng)
+    elif request.id_plamy:
+        print(f"[API] Analiza predefiniowanej Białej Plamy: {request.id_plamy}")
+        # TUTAJ PÓŹNIEJ DODAMY: sciezka_zdjecia = f"data/labeled_images/{request.id_plamy}.jpg"
         
-    # Bierzemy pierwsze zdjęcie z brzegu
-    pelna_sciezka = os.path.join(IMAGE_DIR, pliki[0])
+    # Odpalamy AI z nowymi instrukcjami i kontekstem czasowym
+    wynik_json = analizuj_biala_plame(request.id_opcji, sciezka_zdjecia, request.kontekst_czasowy)
     
-    # Uruchamiamy AI
-    wynik_analizy = analizuj_surowe_zdjecie(pelna_sciezka)
-    
-    return {
-        "analizowany_plik": pliki[0],
-        "werdykt_ai": wynik_analizy
-    }
+    return wynik_json

@@ -90,6 +90,18 @@ export default function WhiteSpotsView({
   const [showOptionsModal, setShowOptionsModal] = useState<boolean>(false);
   // TIF satellite overlay states
   const [showTifOverlay, setShowTifOverlay] = useState<boolean>(true);
+  // Analytical layers visibility states
+  const [showBus369, setShowBus369] = useState<boolean>(false);
+  const [showPieszo51015, setShowPieszo51015] = useState<boolean>(false);
+  const [mapBaseLayer, setMapBaseLayer] = useState<'standard' | 'satellite' | 'bdot10k' | 'populacja_h3'>('standard');
+  const [activeLegendInterval, setActiveLegendInterval] = useState<{ layer: 'bus_369' | 'pieszo_51015'; interval: string } | null>(null);
+  const [showStops, setShowStops] = useState<boolean>(true);
+  const [showLines, setShowLines] = useState<boolean>(true);
+
+  // Side panels toggle states (responsive drawers)
+  const [isLayersOpen, setIsLayersOpen] = useState<boolean>(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
+  const [isLegendOpen, setIsLegendOpen] = useState<boolean>(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
+
   // Loading state
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [analysisProgress, setAnalysisProgress] = useState<string>('');
@@ -111,242 +123,99 @@ export default function WhiteSpotsView({
     return () => observer.disconnect();
   }, []);
 
-  // Mock AI Engine Call (returns a Promise resolving to realistic dashboard & markdown report)
-  const mockAICall = (optionId: number, zoneName: string, day: string): Promise<any> => {
-    return new Promise((resolve) => {
-      // Simulate API steps
-      setAnalysisProgress('Wczytywanie zobrazowania satelitarnego BDOT10k...');
-      setTimeout(() => {
-        setAnalysisProgress('Przetwarzanie macierzy podróży pasażerów...');
-        setTimeout(() => {
-          setAnalysisProgress('Generowanie optymalnych rekomendacji transportowych...');
-          setTimeout(() => {
-            // Options specific data mapper
-            const dayLabel = day === 'monday' ? 'Poniedziałek (Szczyt poranny)' : day === 'wednesday' ? 'Środa (Szczyt popołudniowy)' : 'Sobota (Weekend)';
-            
-            let optionTitle = '';
-            let kpis = [];
-            let hourlyFlow = [];
-            let zoneComparison = [];
-            let report = '';
-
-            switch (optionId) {
-              case 1:
-                optionTitle = 'Analiza Niedoborów Częstotliwości (Wykluczenie)';
-                kpis = [
-                  { title: 'Popyt szczytowy', value: '8,450 pas.', desc: 'Wysokie zapotrzebowanie' },
-                  { title: 'Takt średni', value: 'Co 45 min', desc: 'Sugerowany takt: 15 min', isAlert: true },
-                  { title: 'Wskaźnik Wykluczenia', value: '64%', desc: 'Brak skomunikowania osiedli', isAlert: true },
-                  { title: 'Sugerowane pojazdy', value: '+3 autobusy', desc: 'Dla wyrównania taktu' }
-                ];
-                hourlyFlow = [
-                  { time: '06:00', flowCount: 180, delayMinutes: 2 },
-                  { time: '07:00', flowCount: 920, delayMinutes: 12 },
-                  { time: '08:00', flowCount: 1450, delayMinutes: 15 },
-                  { time: '09:00', flowCount: 650, delayMinutes: 5 },
-                  { time: '10:00', flowCount: 300, delayMinutes: 1 }
-                ];
-                zoneComparison = [
-                  { zone: 'Obecna', passengers: 350, capacity: 180 },
-                  { zone: 'AI Propozycja', passengers: 750, capacity: 800 }
-                ];
-                report = `### 🤖 Diagnoza Modelu AI: Wykluczenie Transportowe
-Analiza przestrzenna wykazuje krytyczne wykluczenie transportowe w obszarze **${zoneName}** w scenariuszu **${dayLabel}**. 
-
-#### Główne Wyzwania:
-*   Mieszkańcy nowo powstałych osiedli pokonują pieszo ponad **850m** do najbliższego punktu komunikacji.
-*   Istniejąca linia kursuje zbyt rzadko (takt 45 min), co zmusza pasażerów do przesiadki na transport prywatny.
-
-#### Rekomendacje Wdrożeniowe:
-1.  **Zagęszczenie taktu**: Skrócenie czasu oczekiwania do 15 minut w godzinach 7:00 - 9:00.
-2.  **Korekta przebiegu linii**: Przekierowanie linii 1 głębiej w głąb osiedla przez nowo wybudowany łącznik drogowy.`;
-                break;
-
-              case 2:
-                optionTitle = 'Synchronizacja Przesiadek (Huby Komunikacyjne)';
-                kpis = [
-                  { title: 'Czas oczekiwania', value: '22 min', desc: 'Średni czas na przesiadkę', isAlert: true },
-                  { title: 'Stracony czas', value: '180 h / dobę', desc: 'Suma opóźnień pasażerów', isAlert: true },
-                  { title: 'Wskaźnik skomunikowania', value: '38%', desc: 'Udane przesiadki' },
-                  { title: 'Zysk czasowy', value: '-14 min', desc: 'Po wdrożeniu korekty' }
-                ];
-                hourlyFlow = [
-                  { time: '07:00', flowCount: 450, delayMinutes: 22 },
-                  { time: '08:00', flowCount: 520, delayMinutes: 20 },
-                  { time: '14:00', flowCount: 680, delayMinutes: 25 },
-                  { time: '15:00', flowCount: 820, delayMinutes: 18 },
-                  { time: '16:00', flowCount: 710, delayMinutes: 15 }
-                ];
-                zoneComparison = [
-                  { zone: 'Okulickiego Hub', passengers: 420, capacity: 150 },
-                  { zone: 'Popiełuszki Hub', passengers: 310, capacity: 120 }
-                ];
-                report = `### 🤖 Diagnoza Modelu AI: Synchronizacja Węzłów
-Wykryto brak koordynacji rozkładów jazdy w kluczowych punktach przesiadkowych strefy **${zoneName}**. 
-
-#### Główne Wyzwania:
-*   Autobusy linii 5 odjeżdżają dokładnie **2 minuty przed** przyjazdem linii P, uniemożliwiając płynną przesiadkę.
-*   Generuje to średnią stratę 20-25 minut na pasażera w godzinach powrotów z pracy.
-
-#### Rekomendacje Wdrożeniowe:
-1.  **Koordynacja rozkładów**: Przesunięcie odjazdu linii 5 o +4 minuty, tworząc tzw. "okienko przesiadkowe".
-2.  **Tablice dynamiczne**: Wdrożenie priorytetu na skrzyżowaniach dla opóźnionych pojazdów dowożących pasażerów na przesiadkę.`;
-                break;
-
-              case 3:
-                optionTitle = 'Isochrony Dostępności Pieszej';
-                kpis = [
-                  { title: 'Zasięg 5 min', value: '28%', desc: 'Niski stopień pokrycia', isAlert: true },
-                  { title: 'Średnie dojście', value: '850 metrów', desc: 'Standard to max 400m', isAlert: true },
-                  { title: 'Poza izochroną', value: '45%', desc: 'Obszar odcięty od sieci' },
-                  { title: 'Nowe przystanki', value: '2 szt.', desc: 'Wymagane do pokrycia' }
-                ];
-                hourlyFlow = [
-                  { time: '08:00', flowCount: 200, delayMinutes: 5 },
-                  { time: '12:00', flowCount: 150, delayMinutes: 4 },
-                  { time: '16:00', flowCount: 220, delayMinutes: 6 },
-                  { time: '18:00', flowCount: 180, delayMinutes: 5 }
-                ];
-                zoneComparison = [
-                  { zone: 'Izochrona 5m', passengers: 1200, capacity: 5000 },
-                  { zone: 'Izochrona 10m', passengers: 3400, capacity: 5000 }
-                ];
-                report = `### 🤖 Diagnoza Modelu AI: Analiza Isochron Pieszych
-Badanie buforów geometrycznych wokół strefy **${zoneName}** wykazuje słabą dostępność pieszą do przystanków MZK.
-
-#### Główne Wyzwania:
-*   Ponad 40% mieszkańców musi iść ponad **10 minut pieszo** do najbliższego punktu dostępowego.
-*   Brak chodników i przejść dla pieszych w kierunku przystanków zniechęca do korzystania z komunikacji miejskiej.
-
-#### Rekomendacje Wdrożeniowe:
-1.  **Nowe lokalizacje przystankowe**: Dodanie dwóch przystanków na żądanie przy głównej arterii mieszkalnej.
-2.  **Infrastruktura towarzysząca**: Budowa oświetlonych ciągów pieszo-rowerowych skracających czas dojścia do przystanku.`;
-                break;
-
-              case 4:
-                optionTitle = 'Wskaźnik Efektywności (Wożenie Powietrza)';
-                kpis = [
-                  { title: 'Średnie napełnienie', value: '12%', desc: 'Pojazdy w 88% puste', isAlert: true },
-                  { title: 'Koszt wozokilometra', value: '8.20 PLN', desc: 'Wysokie straty taboru', isAlert: true },
-                  { title: 'Puste przebiegi', value: '78%', desc: 'Ruch pozaszczytowy', isAlert: true },
-                  { title: 'Zalecenie taborowe', value: 'Mini-busy', desc: 'Pojazdy 8-metrowe' }
-                ];
-                hourlyFlow = [
-                  { time: '09:00', flowCount: 80, delayMinutes: 1 },
-                  { time: '10:00', flowCount: 50, delayMinutes: 0 },
-                  { time: '11:00', flowCount: 45, delayMinutes: 1 },
-                  { time: '12:00', flowCount: 60, delayMinutes: 0 },
-                  { time: '13:00', flowCount: 75, delayMinutes: 2 }
-                ];
-                zoneComparison = [
-                  { zone: 'Obecna Pojemność', passengers: 60, capacity: 500 },
-                  { zone: 'Optymalna Pojemność', passengers: 60, capacity: 120 }
-                ];
-                report = `### 🤖 Diagnoza Modelu AI: Efektywność Napełnienia
-Wykryto drastyczną asymetrię między wielkością taboru a faktycznymi potokami pasażerskimi w strefie **${zoneName}**.
-
-#### Główne Wyzwania:
-*   W godzinach 9:00 - 13:00 na linii 10 kursują przegubowe autobusy 12-metrowe przewożące średnio 3-5 osób.
-*   Wskaźnik wozokilometra przynosi straty finansowe sięgające kilkunastu tysięcy złotych miesięcznie.
-
-#### Rekomendacje Wdrożeniowe:
-1.  **Elastyczna wymiana taboru**: Wprowadzenie krótszych pojazdów klasy MIDI/MINI w godzinach pozaszczytowych.
-2.  **Transport na żądanie (DRT)**: Uruchomienie aplikacji rezerwacyjnej na weekendy w mało zaludnionych obszarach Stalowej Woli.`;
-                break;
-
-              case 5:
-                optionTitle = 'Wdrożenie Szybkich Korytarzy (Buspasy)';
-                kpis = [
-                  { title: 'Prędkość handlowa', value: '14 km/h', desc: 'Bardzo powolny przejazd', isAlert: true },
-                  { title: 'Opóźnienie szczytowe', value: '9.5 min', desc: 'Skrzyżowanie zatorowe', isAlert: true },
-                  { title: 'Długość korka', value: '1.2 km', desc: 'Zatory codzienne' },
-                  { title: 'Zysk z buspasa', value: '+8 km/h', desc: 'Przyspieszenie taboru' }
-                ];
-                hourlyFlow = [
-                  { time: '07:30', flowCount: 880, delayMinutes: 12 },
-                  { time: '08:00', flowCount: 1120, delayMinutes: 15 },
-                  { time: '15:30', flowCount: 950, delayMinutes: 10 },
-                  { time: '16:00', flowCount: 1050, delayMinutes: 14 }
-                ];
-                zoneComparison = [
-                  { zone: 'Przejazd Bez Buspasa', passengers: 14, capacity: 25 },
-                  { zone: 'Z Buspasem (Model)', passengers: 22, capacity: 25 }
-                ];
-                report = `### 🤖 Diagnoza Modelu AI: Szybkie Korytarze
-Arteria komunikacyjna w strefie **${zoneName}** odnotowuje drastyczny spadek prędkości handlowej autobusów.
-
-#### Główne Wyzwania:
-*   Współdzielenie pasa ruchu z samochodami osobowymi generuje regularne 15-minutowe opóźnienia w godzinach szczytu.
-*   Brak priorytetu sygnalizacji świetlnej dla transportu zbiorowego.
-
-#### Rekomendacje Wdrożeniowe:
-1.  **Wydzielenie buspasa**: Wyznaczenie prawego pasa ruchu wyłącznie dla autobusów i pojazdów uprzywilejowanych.
-2.  **Zielona fala**: Implementacja systemu ITS dającego zielone światło zbliżającemu się autobusowi.`;
-                break;
-
-              case 6:
-                optionTitle = 'Ekologiczna Alokacja Floty (EV)';
-                kpis = [
-                  { title: 'Emisja lokalna CO2', value: '240 kg / db', desc: 'Gęsta zabudowa miejska', isAlert: true },
-                  { title: 'Zużycie oleju', value: '92 l / dobę', desc: 'Wysokie koszty paliwa' },
-                  { title: 'Hałas silnika', value: '78 dB', desc: 'Przekroczenie norm hałasu', isAlert: true },
-                  { title: 'Kwalifikacja EV', value: '95%', desc: 'Idealna pod autobusy elektryczne' }
-                ];
-                hourlyFlow = [
-                  { time: '08:00', flowCount: 400, delayMinutes: 3 },
-                  { time: '12:00', flowCount: 300, delayMinutes: 2 },
-                  { time: '16:00', flowCount: 450, delayMinutes: 4 },
-                  { time: '20:00', flowCount: 200, delayMinutes: 1 }
-                ];
-                zoneComparison = [
-                  { zone: 'Emisje Diesel', passengers: 100, capacity: 100 },
-                  { zone: 'Emisje Electric (EV)', passengers: 5, capacity: 100 }
-                ];
-                report = `### 🤖 Diagnoza Modelu AI: Ekologiczna Flota
-Analiza profilu emisji i hałasu w strefie **${zoneName}** wykazuje pilną potrzebę alokacji taboru bezemisyjnego.
-
-#### Główne Wyzwania:
-*   Trasa przebiega przez gęsto zaludnione obszary mieszkaniowe oraz strefę uzdrowiskowo-parkową.
-*   Tradycyjne silniki wysokoprężne generują hałas przekraczający normy o **12 dB**.
-
-#### Rekomendacje Wdrożeniowe:
-1.  **Skierowanie autobusów elektrycznych**: Pełna wymiana taboru na linii obsługującej tę strefę na pojazdy elektryczne (EV).
-2.  **Punkty szybkiego ładowania**: Budowa ładowarki pantografowej na pętli końcowej w celu zapewnienia ciągłości operacyjnej.`;
-                break;
-            }
-
-            resolve({
-              kpis,
-              hourlyFlow,
-              zoneComparison,
-              report,
-              optionTitle
-            });
-          }, 500);
-        }, 500);
-      }, 500);
-    });
-  };
-
   const handleZoneSelect = (zone: WhiteSpotZone | Stop) => {
     setActiveZone(zone);
     setShowOptionsModal(true);
   };
 
-  const handleOptionSelect = (optionId: number) => {
+  const handleMapClickAnalysis = (coords: { lat: number; lng: number }) => {
+    const customZone: WhiteSpotZone = {
+      id: 'custom-click-zone',
+      name: `Punkt pomiarowy (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`,
+      lat: coords.lat,
+      lng: coords.lng,
+      efficiencyScore: 0,
+      description: `Analiza optymalizacji obszaru wokół punktu geograficznego o współrzędnych ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}.`
+    };
+    setActiveZone(customZone);
+    setShowOptionsModal(true);
+  };
+
+  const handleOptionSelect = async (optionId: number) => {
     if (!activeZone) return;
+    
+    // Zamykamy modal i pokazujemy kręciołek
     setShowOptionsModal(false);
     setIsAnalyzing(true);
     setAiResult(null);
+    setAnalysisProgress('Łączenie z silnikiem Gemini AI...');
 
-    mockAICall(optionId, activeZone.name, selectedDay).then((res) => {
-      setAiResult(res);
+    // Tłumaczymy dzień tygodnia z frontendu na czytelny tekst dla AI
+    const kontekst = selectedDay === 'monday' ? 'Poniedziałek (Szczyt poranny)' 
+                   : selectedDay === 'wednesday' ? 'Środa (Szczyt popołudniowy)' 
+                   : 'Sobota (Weekend)';
+
+    // Budujemy paczkę dla naszego backendu FastAPI
+    const payload = {
+      id_opcji: `opcja_${optionId}`,
+      kontekst_czasowy: kontekst,
+      id_plamy: 'id' in activeZone ? activeZone.id : undefined,
+      lat: activeZone.lat,
+      lng: activeZone.lng
+    };
+
+    try {
+      console.log("🚀 Wysyłam zapytanie do API:", payload);
+      
+      // Prawdziwy strzał do Twojego działającego API
+      const response = await fetch("http://localhost:8000/api/analiza/generuj", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) throw new Error(`Błąd serwera: ${response.status}`);
+
+      // Odbieramy gotowego JSON-a od Gemini
+      const aiData = await response.json();
+      console.log("✅ Raport AI odebrany!", aiData);
+
+      // Wstrzykujemy dane do interfejsu (zostawiając makiety wykresów dla pięknego dema)
+      setAiResult({
+        optionTitle: aiData.tytul_raportu || `Analiza AI`,
+        report: `### 🤖 Diagnoza Modelu AI\n${aiData.diagnoza_problemu}\n\n#### Rekomendacje Wdrożeniowe:\n${aiData.rekomendacja_dzialan}`,
+        kpis: aiData.dane_do_wykresu ? aiData.dane_do_wykresu.map((d: any) => ({
+          title: d.kategoria,
+          value: String(d.wartosc) + (d.kategoria.includes('%') ? '%' : ''),
+          desc: 'Wskazanie modelu',
+          isAlert: typeof d.wartosc === 'number' && d.wartosc > 50
+        })) : [],
+        hourlyFlow: [
+          { time: '07:00', flowCount: 250, delayMinutes: 12 },
+          { time: '08:00', flowCount: 520, delayMinutes: 25 },
+          { time: '14:00', flowCount: 380, delayMinutes: 15 },
+          { time: '15:00', flowCount: 620, delayMinutes: 10 }
+        ],
+        zoneComparison: [
+          { zone: 'Obecna sytuacja', passengers: 200, capacity: 150 },
+          { zone: 'Rekomendacja AI', passengers: 450, capacity: 500 }
+        ]
+      });
+
+    } catch (error) {
+      console.error("❌ Błąd podczas łączenia z AI:", error);
+      setAiResult({
+         optionTitle: "Błąd połączenia",
+         report: "Nie udało się połączyć z backendem. Upewnij się, że serwer FastAPI jest włączony na porcie 8000.",
+         kpis: [], hourlyFlow: [], zoneComparison: []
+      });
+    } finally {
       setIsAnalyzing(false);
-      // Scroll to result on mobile
+      // Przewijanie do wyniku
       setTimeout(() => {
         document.getElementById('ai-results-panel')?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
-    });
+    }
   };
 
   const primaryColor = '#10b981'; // emerald-500
@@ -355,7 +224,7 @@ Analiza profilu emisji i hałasu w strefie **${zoneName}** wykazuje pilną potrz
 
   return (
     <div className="flex min-h-[calc(100vh-6.5rem)] flex-col bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 space-y-6" id="view-2-whitespots">
-      
+
       {/* Top Cockpit Header & Scenario Switcher */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5 dark:border-slate-800">
         <div>
@@ -376,45 +245,24 @@ Analiza profilu emisji i hałasu w strefie **${zoneName}** wykazuje pilną potrz
           {/* TIF Satellite Overlay Toggle */}
           <button
             onClick={() => setShowTifOverlay(!showTifOverlay)}
-            className={`rounded-xl px-3 py-1.5 text-[10.5px] font-bold border transition-all flex items-center space-x-1.5 shadow-sm active:scale-[0.98] ${
-              showTifOverlay
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 dark:text-emerald-400 hover:bg-emerald-500/20'
-                : 'bg-white border-slate-200 text-slate-500 hover:text-slate-700 dark:bg-slate-900 dark:border-white/10 dark:text-slate-400 dark:hover:text-white'
-            }`}
+            className={`rounded-xl px-3 py-1.5 text-[10.5px] font-bold border transition-all flex items-center space-x-1.5 shadow-sm active:scale-[0.98] ${showTifOverlay
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 dark:text-emerald-400 hover:bg-emerald-500/20'
+              : 'bg-white border-slate-200 text-slate-500 hover:text-slate-700 dark:bg-slate-900 dark:border-white/10 dark:text-slate-400 dark:hover:text-white'
+              }`}
           >
             <Layers className="h-3.5 w-3.5" />
             <span>Nałóż wycinek TIF (Satelita AI)</span>
           </button>
 
-          {/* Day Scenario Toggler */}
-          <div className="flex items-center space-x-1.5 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200/50 dark:border-white/10">
-            {[
-              { id: 'monday' as const, label: 'Poniedziałek (Szczyt poranny)' },
-              { id: 'wednesday' as const, label: 'Środa (Szczyt popołudniowy)' },
-              { id: 'saturday' as const, label: 'Sobota (Weekend)' },
-            ].map((day) => (
-              <button
-                key={day.id}
-                onClick={() => { setSelectedDay(day.id); setAiResult(null); }}
-                className={`rounded-lg px-3 py-1.5 text-[10.5px] font-bold transition-all whitespace-nowrap ${
-                  selectedDay === day.id
-                    ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
-                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'
-                }`}
-              >
-                {day.label}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
       {/* Main Section Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        
+
         {/* Left Column: List of White Spots + Map (7 cols) */}
         <div className="lg:col-span-7 flex flex-col space-y-4">
-          
+
           {/* Quick-action White Spots list */}
           <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-slate-900 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center">
@@ -425,11 +273,10 @@ Analiza profilu emisji i hałasu w strefie **${zoneName}** wykazuje pilną potrz
                 <button
                   key={zone.id}
                   onClick={() => handleZoneSelect(zone)}
-                  className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
-                    activeZone?.id === zone.id
-                      ? 'border-cyan-500 bg-cyan-500/5 dark:bg-cyan-950/20'
-                      : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 dark:border-white/5 dark:bg-slate-950/40 dark:hover:bg-slate-900/50'
-                  }`}
+                  className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${activeZone?.id === zone.id
+                    ? 'border-cyan-500 bg-cyan-500/5 dark:bg-cyan-950/20'
+                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 dark:border-white/5 dark:bg-slate-950/40 dark:hover:bg-slate-900/50'
+                    }`}
                 >
                   <div className="flex items-center justify-between w-full">
                     <span className="text-[10px] font-extrabold uppercase text-cyan-500 font-mono">Biała Plama</span>
@@ -445,19 +292,318 @@ Analiza profilu emisji i hałasu w strefie **${zoneName}** wykazuje pilną potrz
           </div>
 
           {/* Interactive Map */}
-          <div className="relative flex-1 min-h-[400px] border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-900/50">
-            
+          <div className="relative flex-1 min-h-[620px] border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-900/50">
+
             {/* Map Component */}
             <MapMockup
               stops={stops}
-              activeLayer="standard"
+              activeLayer={mapBaseLayer}
               onStopClick={(stop) => handleZoneSelect(stop)}
               hoveredStopId={hoveredStopId}
               setHoveredStopId={setHoveredStopId}
               selectedStop={selectedStop}
               showTifOverlay={showTifOverlay}
               tifOverlayCoords={activeZone ? { lat: activeZone.lat, lng: activeZone.lng } : null}
+              showBus369={showBus369}
+              showPieszo51015={showPieszo51015}
+              activeLegendInterval={activeLegendInterval}
+              showStops={showStops}
+              showLines={showLines}
+              hoverCtaLabel="Analizuj"
+              popupCtaLabel="Analizuj"
+              showTrafficLoadLegend={false}
+              onMapClickAnalysis={handleMapClickAnalysis}
             />
+
+            {/* Floating Trigger Buttons (mobile/desktop overlays) */}
+            <div className="absolute top-4 right-4 z-30 flex flex-col space-y-2 pointer-events-auto">
+              <button
+                onClick={() => setIsLayersOpen(!isLayersOpen)}
+                className={`p-2.5 rounded-xl border shadow-lg backdrop-blur-md transition-all active:scale-95 flex items-center justify-center ${isLayersOpen
+                    ? 'bg-emerald-500 text-white border-emerald-400'
+                    : 'bg-slate-950/80 hover:bg-slate-900 text-slate-200 border-white/10'
+                  }`}
+                title="Zarządzanie warstwami"
+              >
+                <Layers className="h-4.5 w-4.5" />
+              </button>
+
+              <button
+                onClick={() => setIsLegendOpen(!isLegendOpen)}
+                className={`p-2.5 rounded-xl border shadow-lg backdrop-blur-md transition-all active:scale-95 flex items-center justify-center ${isLegendOpen
+                    ? 'bg-emerald-500 text-white border-emerald-400'
+                    : 'bg-slate-950/80 hover:bg-slate-900 text-slate-200 border-white/10'
+                  }`}
+                title="Interaktywna Legenda"
+              >
+                <Activity className="h-4.5 w-4.5" />
+              </button>
+            </div>
+
+            {/* Backdrop for mobile drawers */}
+            {isLayersOpen && (
+              <div
+                onClick={() => setIsLayersOpen(false)}
+                className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-xs lg:hidden"
+              />
+            )}
+            {isLegendOpen && (
+              <div
+                onClick={() => setIsLegendOpen(false)}
+                className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-xs lg:hidden"
+              />
+            )}
+
+            {/* Layers panel (floating widget on desktop, drawer on mobile) */}
+            {isLayersOpen && (
+              <div className="absolute top-20 right-4 z-40 w-64 bg-slate-950/90 text-white border border-white/10 p-4 rounded-xl shadow-2xl backdrop-blur-md transition-all duration-300 pointer-events-auto max-lg:fixed max-lg:top-0 max-lg:right-0 max-lg:bottom-0 max-lg:h-screen max-lg:w-80 max-lg:rounded-none max-lg:border-l max-lg:border-t-0 max-lg:border-b-0 max-lg:border-r-0 max-lg:p-6">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
+                  <div className="flex items-center space-x-2">
+                    <Layers className="h-4 w-4 text-emerald-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Warstwy Mapy</span>
+                  </div>
+                  <button
+                    onClick={() => setIsLayersOpen(false)}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    <X className="h-4.5 w-4.5" />
+                  </button>
+                </div>
+
+                <div className="space-y-4 text-left">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Podkład mapy</label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { id: 'standard', label: 'Standard' },
+                        { id: 'satellite', label: 'Satelita' },
+                        { id: 'bdot10k', label: 'BDOT10k' },
+                        { id: 'populacja_h3', label: 'Populacja H3' },
+                      ].map((lay) => (
+                        <button
+                          key={lay.id}
+                          onClick={() => setMapBaseLayer(lay.id as any)}
+                          className={`px-2 py-1 text-[10px] font-bold rounded-lg border text-center transition-all ${mapBaseLayer === lay.id
+                              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
+                              : 'bg-slate-900 border-white/5 text-slate-400 hover:text-white hover:border-white/10'
+                            }`}
+                        >
+                          {lay.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t border-white/5 pt-3">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Warstwy sieci i analizy</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5 hover:border-white/10 transition-all cursor-pointer">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={showStops}
+                            onChange={(e) => setShowStops(e.target.checked)}
+                            className="rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-emerald-500/30 h-3.5 w-3.5 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-semibold text-slate-200">Przystanki komunikacyjne</span>
+                        </div>
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" />
+                      </label>
+
+                      <label className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5 hover:border-white/10 transition-all cursor-pointer">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={showLines}
+                            onChange={(e) => setShowLines(e.target.checked)}
+                            className="rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-emerald-500/30 h-3.5 w-3.5 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-semibold text-slate-200">Trasy i linie autobusowe</span>
+                        </div>
+                        <span className="h-1 w-4 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee]" />
+                      </label>
+
+                      <label className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5 hover:border-white/10 transition-all cursor-pointer">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={showBus369}
+                            onChange={(e) => {
+                              setShowBus369(e.target.checked);
+                              if (!e.target.checked && activeLegendInterval?.layer === 'bus_369') {
+                                setActiveLegendInterval(null);
+                              }
+                            }}
+                            className="rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-emerald-500/30 h-3.5 w-3.5 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-semibold text-slate-200">Obszar Bus (3-6-9 min)</span>
+                        </div>
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+                      </label>
+
+                      <label className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5 hover:border-white/10 transition-all cursor-pointer">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={showPieszo51015}
+                            onChange={(e) => {
+                              setShowPieszo51015(e.target.checked);
+                              if (!e.target.checked && activeLegendInterval?.layer === 'pieszo_51015') {
+                                setActiveLegendInterval(null);
+                              }
+                            }}
+                            className="rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-emerald-500/30 h-3.5 w-3.5 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-semibold text-slate-200">Obszar Pieszo (5-10-15 min)</span>
+                        </div>
+                        <span className="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]" />
+                      </label>
+
+                      <label className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5 hover:border-white/10 transition-all cursor-pointer">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={showTifOverlay}
+                            onChange={(e) => setShowTifOverlay(e.target.checked)}
+                            className="rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-emerald-500/30 h-3.5 w-3.5 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-semibold text-slate-200">Satelita AI (TIF)</span>
+                        </div>
+                        <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Legend panel (floating widget on desktop, drawer on mobile) */}
+            {isLegendOpen && (
+              <div className="absolute top-20 left-4 z-40 w-64 bg-slate-950/90 text-white border border-white/10 p-4 rounded-xl shadow-2xl backdrop-blur-md transition-all duration-300 pointer-events-auto max-lg:fixed max-lg:top-0 max-lg:left-0 max-lg:bottom-0 max-lg:h-screen max-lg:w-80 max-lg:rounded-none max-lg:border-r max-lg:border-t-0 max-lg:border-b-0 max-lg:border-l-0 max-lg:p-6">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
+                  <div className="flex items-center space-x-2">
+                    <Activity className="h-4 w-4 text-emerald-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Legenda Interaktywna</span>
+                  </div>
+                  <button
+                    onClick={() => setIsLegendOpen(false)}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    <X className="h-4.5 w-4.5" />
+                  </button>
+                </div>
+
+                <div className="space-y-4 text-left animate-fade-in">
+                  {/* Obciążenie taboru (zawsze widoczne w legendzie) */}
+                  <div className="space-y-2 pb-3 border-b border-white/5">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Natężenie ruchu (Stalowa Wola)</span>
+                    <div className="grid grid-cols-1 gap-1.5 text-[10.5px]">
+                      <div className="flex items-center space-x-2 bg-slate-900/40 border border-white/5 p-1.5 rounded-lg">
+                        <span className="h-2.5 w-2.5 rounded-full bg-rose-500 ring-4 ring-rose-500/20 animate-pulse"></span>
+                        <span className="font-semibold text-slate-200">Wysokie obciążenie</span>
+                      </div>
+                      <div className="flex items-center space-x-2 bg-slate-900/40 border border-white/5 p-1.5 rounded-lg">
+                        <span className="h-2.5 w-2.5 rounded-full bg-amber-500 ring-4 ring-amber-500/20"></span>
+                        <span className="font-semibold text-slate-200">Średnie obciążenie</span>
+                      </div>
+                      <div className="flex items-center space-x-2 bg-slate-900/40 border border-white/5 p-1.5 rounded-lg">
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"></span>
+                        <span className="font-semibold text-slate-200">Niskie obciążenie</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Informacja o warstwach analitycznych */}
+                  {!showBus369 && !showPieszo51015 && (
+                    <p className="text-[10px] text-slate-400 leading-relaxed italic">
+                      Włącz warstwy analityczne (Autobus lub Pieszy) w panelu warstw, aby zobaczyć izochrony i wchodzić w interakcję z mapą.
+                    </p>
+                  )}
+
+                  {showBus369 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Obszar Autobusowy</span>
+                        <span className="text-[8px] text-slate-500 font-bold">HOVER / CLICK</span>
+                      </div>
+                      <div className="space-y-1">
+                        {[
+                          { interval: '0 - 3', label: 'Do 3 min', color: 'bg-emerald-500/50 border-emerald-400', border: '#10b981' },
+                          { interval: '3 - 6', label: '3 - 6 min', color: 'bg-cyan-500/40 border-cyan-400', border: '#06b6d4' },
+                          { interval: '6 - 9', label: '6 - 9 min', color: 'bg-blue-500/30 border-blue-400', border: '#3b82f6' },
+                        ].map((item) => {
+                          const isHighlighted = activeLegendInterval?.layer === 'bus_369' && activeLegendInterval?.interval === item.interval;
+                          const isAnyHighlighted = activeLegendInterval !== null;
+                          const isDimmed = isAnyHighlighted && !isHighlighted;
+                          return (
+                            <div
+                              key={item.interval}
+                              onMouseEnter={() => setActiveLegendInterval({ layer: 'bus_369', interval: item.interval })}
+                              onMouseLeave={() => setActiveLegendInterval(null)}
+                              onClick={() => {
+                                if (activeLegendInterval?.layer === 'bus_369' && activeLegendInterval?.interval === item.interval) {
+                                  setActiveLegendInterval(null);
+                                } else {
+                                  setActiveLegendInterval({ layer: 'bus_369', interval: item.interval });
+                                }
+                              }}
+                              className={`flex items-center space-x-3 p-1.5 rounded-lg border transition-all cursor-pointer ${isHighlighted
+                                  ? 'bg-white/10 border-white/20 scale-[1.02]'
+                                  : 'bg-slate-900/40 border-transparent hover:border-white/5'
+                                } ${isDimmed ? 'opacity-40' : 'opacity-100'}`}
+                            >
+                              <span className={`h-3 w-6 rounded border ${item.color}`} style={{ borderColor: item.border }} />
+                              <span className="text-[11px] font-medium text-slate-200">{item.label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {showPieszo51015 && (
+                    <div className={`space-y-2 ${showBus369 ? 'border-t border-white/5 pt-3' : ''}`}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Obszar Pieszy</span>
+                        <span className="text-[8px] text-slate-500 font-bold">HOVER / CLICK</span>
+                      </div>
+                      <div className="space-y-1">
+                        {[
+                          { interval: '0 - 5', label: 'Do 5 min', color: 'bg-amber-500/50 border-amber-400', border: '#f59e0b' },
+                          { interval: '5 - 10', label: '5 - 10 min', color: 'bg-orange-500/40 border-orange-400', border: '#f97316' },
+                          { interval: '10 - 15', label: '10 - 15 min', color: 'bg-rose-500/30 border-rose-400', border: '#ef4444' },
+                        ].map((item) => {
+                          const isHighlighted = activeLegendInterval?.layer === 'pieszo_51015' && activeLegendInterval?.interval === item.interval;
+                          const isAnyHighlighted = activeLegendInterval !== null;
+                          const isDimmed = isAnyHighlighted && !isHighlighted;
+                          return (
+                            <div
+                              key={item.interval}
+                              onMouseEnter={() => setActiveLegendInterval({ layer: 'pieszo_51015', interval: item.interval })}
+                              onMouseLeave={() => setActiveLegendInterval(null)}
+                              onClick={() => {
+                                if (activeLegendInterval?.layer === 'pieszo_51015' && activeLegendInterval?.interval === item.interval) {
+                                  setActiveLegendInterval(null);
+                                } else {
+                                  setActiveLegendInterval({ layer: 'pieszo_51015', interval: item.interval });
+                                }
+                              }}
+                              className={`flex items-center space-x-3 p-1.5 rounded-lg border transition-all cursor-pointer ${isHighlighted
+                                  ? 'bg-white/10 border-white/20 scale-[1.02]'
+                                  : 'bg-slate-900/40 border-transparent hover:border-white/5'
+                                } ${isDimmed ? 'opacity-40' : 'opacity-100'}`}
+                            >
+                              <span className={`h-3 w-6 rounded border ${item.color}`} style={{ borderColor: item.border }} />
+                              <span className="text-[11px] font-medium text-slate-200">{item.label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Simulated Loading overlay */}
             {isAnalyzing && (
@@ -476,7 +622,7 @@ Analiza profilu emisji i hałasu w strefie **${zoneName}** wykazuje pilną potrz
         <div className="lg:col-span-5 flex flex-col" id="ai-results-panel">
           {aiResult ? (
             <div className="space-y-6 flex-1 flex flex-col justify-between">
-              
+
               {/* AI Report Markdown Panel */}
               <div className="rounded-2xl border border-emerald-500/20 bg-white p-5 dark:border-emerald-500/20 dark:bg-slate-900 flex-1 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
@@ -486,36 +632,36 @@ Analiza profilu emisji i hałasu w strefie **${zoneName}** wykazuje pilną potrz
                       Wnioski AI
                     </span>
                   </div>
-                  <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md font-bold text-slate-500 dark:text-slate-400">
+                  <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md font-bold text-slate-500 dark:text-slate-400 text-right line-clamp-1 max-w-[200px]">
                     {aiResult.optionTitle}
                   </span>
                 </div>
 
                 {/* Markdown text container */}
                 <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-3 prose dark:prose-invert">
-                  <div dangerouslySetInnerHTML={{ __html: aiResult.report
-                    .replace(/### (.*)/g, '<h3 class="text-sm font-bold text-slate-900 dark:text-white mt-4 first:mt-0">$1</h3>')
-                    .replace(/#### (.*)/g, '<h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-2">$1</h4>')
-                    .replace(/\* (.*)/g, '<li class="ml-4 list-disc">$1</li>')
-                    .replace(/\d+\. (.*)/g, '<li class="ml-4 list-decimal">$1</li>')
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                  <div dangerouslySetInnerHTML={{
+                    __html: aiResult.report
+                      .replace(/### (.*)/g, '<h3 class="text-sm font-bold text-slate-900 dark:text-white mt-4 first:mt-0">$1</h3>')
+                      .replace(/#### (.*)/g, '<h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-2">$1</h4>')
+                      .replace(/\* (.*)/g, '<li class="ml-4 list-disc">$1</li>')
+                      .replace(/\d+\. (.*)/g, '<li class="ml-4 list-decimal">$1</li>')
+                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                   }} />
                 </div>
               </div>
 
               {/* Bento Dashboard stats and charts */}
               <div className="space-y-4 mt-6">
-                
+
                 {/* KPIs */}
                 <div className="grid grid-cols-2 gap-3">
                   {aiResult.kpis.map((kpi, idx) => (
                     <div
                       key={idx}
-                      className={`rounded-2xl border bg-white p-3.5 dark:bg-slate-900 transition-colors ${
-                        kpi.isAlert
-                          ? 'border-cyan-500/30 bg-cyan-500/5 dark:border-cyan-500/20'
-                          : 'border-slate-200 dark:border-white/10'
-                      }`}
+                      className={`rounded-2xl border bg-white p-3.5 dark:bg-slate-900 transition-colors ${kpi.isAlert
+                        ? 'border-cyan-500/30 bg-cyan-500/5 dark:border-cyan-500/20'
+                        : 'border-slate-200 dark:border-white/10'
+                        }`}
                     >
                       <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">
                         {kpi.title}
@@ -594,7 +740,7 @@ Analiza profilu emisji i hałasu w strefie **${zoneName}** wykazuje pilną potrz
       {showOptionsModal && activeZone && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
           <div className="relative w-full max-w-xl bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4">
-            
+
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-white/5 pb-3">
               <div className="flex items-center space-x-2">
@@ -621,12 +767,12 @@ Analiza profilu emisji i hałasu w strefie **${zoneName}** wykazuje pilną potrz
             {/* 6 options Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               {[
-                { id: 1, title: 'Częstotliwość i Wykluczenie', desc: 'Analiza niedoborów rozkładowych i braków skomunikowania.' },
-                { id: 2, title: 'Synchronizacja Przesiadek', desc: 'Optymalizacja odjazdów w węzłach przesiadkowych.' },
-                { id: 3, title: 'Izochrony Dostępności', desc: 'Czas dojścia pieszego do najbliższych punktów sieci.' },
-                { id: 4, title: 'Efektywność Taboru', desc: 'Wyszukiwanie pustych przebiegów i optymalnego tonażu.' },
-                { id: 5, title: 'Korytarze Szybkie (Buspasy)', desc: 'Wyznaczanie dedykowanych pasów i priorytetów ITS.' },
-                { id: 6, title: 'Ekologiczna Flota (EV)', desc: 'Analiza emisji spalin i stopnia przydatności pod elektryki.' },
+                { id: 1, title: 'Możliwe zmiany w układzie linii autobusowych', desc: 'Analiza niedoborów rozkładowych i optymalizacja tras.' },
+                { id: 2, title: 'Lokalizacja nowych elementów infrastruktury', desc: 'Wyznaczanie miejsc na nowe przystanki i węzły.' },
+                { id: 3, title: 'Rekomendacje związane z bezpieczeństwem ruchu', desc: 'Identyfikacja niebezpiecznych przejść i skrzyżowań.' },
+                { id: 4, title: 'Potencjalne miejsca rozszerzeń/zwężeń dróg', desc: 'Wyszukiwanie wąskich gardeł w infrastrukturze.' },
+                { id: 5, title: 'Działania poprawiające płynność ruchu pieszych i rowerzystów', desc: 'Projektowanie ścieżek i bezpiecznych przejść.' },
+                { id: 6, title: 'Propozycje lepszej koordynacji transportu w skali miasta', desc: 'Integracja sieci transportowej i zarządzanie emisjami.' },
               ].map((opt) => (
                 <button
                   key={opt.id}
@@ -634,10 +780,10 @@ Analiza profilu emisji i hałasu w strefie **${zoneName}** wykazuje pilną potrz
                   className="flex flex-col text-left p-3 rounded-xl border border-white/5 bg-slate-950 hover:bg-slate-800 hover:border-emerald-500/50 hover:scale-[1.01] transition-all"
                 >
                   <div className="flex items-center space-x-1.5">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10 text-[10px] font-extrabold text-emerald-500 font-mono">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10 text-[10px] font-extrabold text-emerald-500 font-mono shrink-0">
                       0{opt.id}
                     </span>
-                    <strong className="text-xs text-white leading-none">{opt.title}</strong>
+                    <strong className="text-xs text-white leading-tight">{opt.title}</strong>
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed">{opt.desc}</p>
                 </button>
@@ -651,3 +797,4 @@ Analiza profilu emisji i hałasu w strefie **${zoneName}** wykazuje pilną potrz
     </div>
   );
 }
+
