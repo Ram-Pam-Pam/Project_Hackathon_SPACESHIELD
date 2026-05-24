@@ -78,21 +78,36 @@ export default function AnalyticalReportView({ onGoToDashboard }: AnalyticalRepo
     }
   };
 
-  const handlePromptSubmit = (e: React.FormEvent) => {
+  const handlePromptSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userPrompt.trim()) return;
     setIsGenerating(true);
+    setCustomResponse(null); // Czyścimy starą odpowiedź
 
-    setTimeout(() => {
-      setCustomResponse(
-        `[Generowanie Dynamicznej Analizy Przestrzennej AI dla Stalowej Woli]\n` +
-        `Na podstawie wprowadzonego zapytania ("${userPrompt}") model geolokalizacyjny przeanalizował macierze podróży dla sektora Śródmieście/Klasztor.\n\n` +
-        `• ANALIZA: Wskazany obszar odznacza się asymetrią potoków. Wprowadzenie dedykowanego pasa "Bus-only" wzdłuż Alei Jana Pawła II wydaje się pożądane, jednak ograniczy przepustowość aut osobowych o 18%.\n` +
-        `• SYNERGIA: Rekomenduje się skoordynowanie cykli sygnalizacji "Zielona Fala BST" między rondem przy Okulickiego a zjazdem na ul. Popiełuszki.\n` +
-        `• EFEKT KOŃCOWY: Redukcja spóźnień w przedziale godzinowym 7:30 - 8:15 o szacowane 4.5 minuty.`
-      );
+    try {
+      // Strzał do Twojego nowego endpointu w FastAPI!
+      const response = await fetch('http://localhost:8000/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: userPrompt })
+      });
+
+      if (!response.ok) {
+        throw new Error('Błąd serwera');
+      }
+
+      const data = await response.json();
+      
+      // Wrzucamy do UI prawdziwą odpowiedź z Gemini
+      setCustomResponse(data.odpowiedz);
+    } catch (error) {
+      console.error(error);
+      setCustomResponse('⚠️ Wystąpił błąd podczas łączenia z głównym silnikiem AI.');
+    } finally {
       setIsGenerating(false);
-    }, 1500);
+    }
   };
 
   const currentContent = contentMap[selectedPreset];
