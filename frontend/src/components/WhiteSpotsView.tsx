@@ -123,240 +123,86 @@ export default function WhiteSpotsView({
     return () => observer.disconnect();
   }, []);
 
-  // Mock AI Engine Call
-  const mockAICall = (optionId: number, zoneName: string, day: string): Promise<any> => {
-    return new Promise((resolve) => {
-      setAnalysisProgress('Wczytywanie zobrazowania satelitarnego BDOT10k...');
-      setTimeout(() => {
-        setAnalysisProgress('Przetwarzanie macierzy podróży pasażerów...');
-        setTimeout(() => {
-          setAnalysisProgress('Generowanie optymalnych rekomendacji transportowych...');
-          setTimeout(() => {
-            const dayLabel = day === 'monday' ? 'Poniedziałek (Szczyt poranny)' : day === 'wednesday' ? 'Środa (Szczyt popołudniowy)' : 'Sobota (Weekend)';
-
-            let optionTitle = '';
-            let kpis = [];
-            let hourlyFlow = [];
-            let zoneComparison = [];
-            let report = '';
-
-            switch (optionId) {
-              case 1:
-                optionTitle = 'Możliwe zmiany w układzie linii autobusowych';
-                kpis = [
-                  { title: 'Popyt szczytowy', value: '8,450 pas.', desc: 'Wysokie zapotrzebowanie' },
-                  { title: 'Takt średni', value: 'Co 45 min', desc: 'Sugerowany takt: 15 min', isAlert: true },
-                  { title: 'Wskaźnik Wykluczenia', value: '64%', desc: 'Brak skomunikowania osiedli', isAlert: true },
-                  { title: 'Sugerowane pojazdy', value: '+3 autobusy', desc: 'Dla wyrównania taktu' }
-                ];
-                hourlyFlow = [
-                  { time: '06:00', flowCount: 180, delayMinutes: 2 },
-                  { time: '07:00', flowCount: 920, delayMinutes: 12 },
-                  { time: '08:00', flowCount: 1450, delayMinutes: 15 },
-                  { time: '09:00', flowCount: 650, delayMinutes: 5 },
-                  { time: '10:00', flowCount: 300, delayMinutes: 1 }
-                ];
-                zoneComparison = [
-                  { zone: 'Obecna', passengers: 350, capacity: 180 },
-                  { zone: 'AI Propozycja', passengers: 750, capacity: 800 }
-                ];
-                report = `### 🤖 Diagnoza Modelu AI: Możliwe zmiany w układzie linii autobusowych
-Analiza przestrzenna wykazuje problemy z siatką połączeń w obszarze **${zoneName}** w scenariuszu **${dayLabel}**. 
-
-#### Główne Wyzwania:
-* Mieszkańcy nowo powstałych osiedli pokonują pieszo ponad **850m** do najbliższego punktu komunikacji.
-* Istniejąca linia kursuje zbyt rzadko (takt 45 min), co zmusza pasażerów do przesiadki na transport prywatny.
-
-#### Rekomendacje Wdrożeniowe:
-1.  **Zagęszczenie taktu**: Skrócenie czasu oczekiwania do 15 minut w godzinach 7:00 - 9:00.
-2.  **Korekta przebiegu linii**: Przekierowanie głównej linii w głąb osiedla przez nowo wybudowany łącznik drogowy.`;
-                break;
-
-              case 2:
-                optionTitle = 'Lokalizacja nowych elementów infrastruktury';
-                kpis = [
-                  { title: 'Czas oczekiwania', value: '22 min', desc: 'Średni czas na przesiadkę', isAlert: true },
-                  { title: 'Stracony czas', value: '180 h / dobę', desc: 'Suma opóźnień pasażerów', isAlert: true },
-                  { title: 'Wskaźnik skomunikowania', value: '38%', desc: 'Udane przesiadki' },
-                  { title: 'Zysk czasowy', value: '-14 min', desc: 'Po wdrożeniu korekty' }
-                ];
-                hourlyFlow = [
-                  { time: '07:00', flowCount: 450, delayMinutes: 22 },
-                  { time: '08:00', flowCount: 520, delayMinutes: 20 },
-                  { time: '14:00', flowCount: 680, delayMinutes: 25 },
-                  { time: '15:00', flowCount: 820, delayMinutes: 18 },
-                  { time: '16:00', flowCount: 710, delayMinutes: 15 }
-                ];
-                zoneComparison = [
-                  { zone: 'Brak infrastruktury', passengers: 420, capacity: 150 },
-                  { zone: 'Nowy węzeł', passengers: 310, capacity: 500 }
-                ];
-                report = `### 🤖 Diagnoza Modelu AI: Lokalizacja nowych elementów infrastruktury
-Wykryto braki w infrastrukturze przesiadkowej i parkingowej w strefie **${zoneName}**. 
-
-#### Główne Wyzwania:
-* Brak dedykowanych zatok autobusowych powoduje blokowanie ruchu na głównej arterii podczas wymiany pasażerskiej.
-* Pasażerowie oczekują na przesiadki w miejscach pozbawionych wiat i bezpiecznych przejść.
-
-#### Rekomendacje Wdrożeniowe:
-1.  **Budowa centrum przesiadkowego**: Zintegrowanie stanowisk autobusowych z systemem Park&Ride.
-2.  **Tablice dynamiczne**: Wdrożenie systemu informacji pasażerskiej w czasie rzeczywistym na nowych przystankach.`;
-                break;
-
-              case 3:
-                optionTitle = 'Rekomendacje związane z bezpieczeństwem ruchu';
-                kpis = [
-                  { title: 'Ryzyko kolizji', value: 'Wysokie', desc: 'Brak sygnalizacji świetlnej', isAlert: true },
-                  { title: 'Średnia prędkość', value: '55 km/h', desc: 'W strefie ograniczenia do 40', isAlert: true },
-                  { title: 'Zdarzenia drogowe', value: '12 / rok', desc: 'W tym z udziałem pieszych' },
-                  { title: 'Zalecane działania', value: 'Progi / Azyle', desc: 'Infrastruktura uspokajająca' }
-                ];
-                hourlyFlow = [
-                  { time: '08:00', flowCount: 200, delayMinutes: 5 },
-                  { time: '12:00', flowCount: 150, delayMinutes: 4 },
-                  { time: '16:00', flowCount: 220, delayMinutes: 6 },
-                  { time: '18:00', flowCount: 180, delayMinutes: 5 }
-                ];
-                zoneComparison = [
-                  { zone: 'Obecny stan', passengers: 1200, capacity: 5000 },
-                  { zone: 'Stan docelowy', passengers: 3400, capacity: 5000 }
-                ];
-                report = `### 🤖 Diagnoza Modelu AI: Rekomendacje związane z bezpieczeństwem ruchu
-Analiza danych z sensorów i map satelitarnych wokół strefy **${zoneName}** wskazuje na wysokie zagrożenie dla uczestników ruchu.
-
-#### Główne Wyzwania:
-* Ponad 40% kierowców przekracza dozwoloną prędkość w rejonie głównego węzła komunikacyjnego.
-* Długie proste odcinki dróg zachęcają do brawurowej jazdy, zagrażając pasażerom komunikacji zbiorowej.
-
-#### Rekomendacje Wdrożeniowe:
-1.  **Azyle dla pieszych**: Budowa wysepek pośrodku przejść dla pieszych na najszerszych arteriach.
-2.  **Inteligentna sygnalizacja**: Wdrożenie świateł wzbudzanych przez pieszych i pojazdy transportu publicznego.`;
-                break;
-
-              case 4:
-                optionTitle = 'Potencjalne miejsca rozszerzeń/zwężeń dróg';
-                kpis = [
-                  { title: 'Przepustowość', value: 'Krytyczna', desc: 'Przekroczona o 15%', isAlert: true },
-                  { title: 'Szerokość pasa', value: '3.5m', desc: 'Możliwość optymalizacji', isAlert: false },
-                  { title: 'Puste przebiegi', value: 'Brak', desc: 'Intensywny ruch', isAlert: false },
-                  { title: 'Zalecenie', value: 'Zwężenie', desc: 'Na rzecz drogi rowerowej' }
-                ];
-                hourlyFlow = [
-                  { time: '09:00', flowCount: 80, delayMinutes: 1 },
-                  { time: '10:00', flowCount: 50, delayMinutes: 0 },
-                  { time: '11:00', flowCount: 45, delayMinutes: 1 },
-                  { time: '12:00', flowCount: 60, delayMinutes: 0 },
-                  { time: '13:00', flowCount: 75, delayMinutes: 2 }
-                ];
-                zoneComparison = [
-                  { zone: 'Przekrój obecny', passengers: 60, capacity: 500 },
-                  { zone: 'Przekrój zoptymalizowany', passengers: 60, capacity: 120 }
-                ];
-                report = `### 🤖 Diagnoza Modelu AI: Potencjalne miejsca rozszerzeń i zwężeń dróg
-Wykryto asymetrię między obecnym przekrojem jezdni a faktycznymi potokami ruchu w strefie **${zoneName}**.
-
-#### Główne Wyzwania:
-* Zbyt szerokie pasy ruchu w centrum zachęcają do przekraczania prędkości i utrudniają przekraczanie jezdni przez pieszych.
-* Wąskie gardła na wjazdach na rondo powodują zatory blokujące autobusy.
-
-#### Rekomendacje Wdrożeniowe:
-1.  **Zwężenie pasów (Dieting drogowy)**: Redukcja szerokości pasów w centrum na rzecz wydzielonych dróg rowerowych i szerszych chodników.
-2.  **Rozszerzenie przed skrzyżowaniem**: Dobudowa dodatkowego pasa typu "bypass" dla prawoskrętów, co upłynni ruch komunikacji miejskiej.`;
-                break;
-
-              case 5:
-                optionTitle = 'Działania poprawiające płynność ruchu pieszych i rowerzystów';
-                kpis = [
-                  { title: 'Ciągłość DDR', value: 'Brak', desc: 'Urywająca się ścieżka', isAlert: true },
-                  { title: 'Czas oczekiwania', value: '3 min', desc: 'Na zielone światło', isAlert: true },
-                  { title: 'Ilość kolizji', value: 'Wysoka', desc: 'Na przejazdach rowerowych' },
-                  { title: 'Zysk z DDR', value: '+40% ruchu', desc: 'Zwiększenie udziału mikro-mobilności' }
-                ];
-                hourlyFlow = [
-                  { time: '07:30', flowCount: 880, delayMinutes: 12 },
-                  { time: '08:00', flowCount: 1120, delayMinutes: 15 },
-                  { time: '15:30', flowCount: 950, delayMinutes: 10 },
-                  { time: '16:00', flowCount: 1050, delayMinutes: 14 }
-                ];
-                zoneComparison = [
-                  { zone: 'Ruch Pieszorowerowy', passengers: 14, capacity: 25 },
-                  { zone: 'Ruch Samochodowy', passengers: 86, capacity: 25 }
-                ];
-                report = `### 🤖 Diagnoza Modelu AI: Płynność ruchu pieszych i rowerzystów
-Infrastruktura w strefie **${zoneName}** wyraźnie faworyzuje ruch samochodowy kosztem niechronionych uczestników ruchu.
-
-#### Główne Wyzwania:
-* Brak ciągłości dróg rowerowych zmusza cyklistów do wjeżdżania na ruchliwą jezdnię.
-* Cykle sygnalizacji świetlnej wymuszają bardzo długie oczekiwanie pieszych.
-
-#### Rekomendacje Wdrożeniowe:
-1.  **Wyznaczenie kontrapasów**: Wprowadzenie ruchu rowerowego pod prąd na ulicach jednokierunkowych.
-2.  **Priorytet na przejściach**: Wdrożenie detekcji termowizyjnej, która automatycznie zapala zielone światło dla zbliżających się grup pieszych.`;
-                break;
-
-              case 6:
-                optionTitle = 'Propozycje lepszej koordynacji transportu w skali miasta';
-                kpis = [
-                  { title: 'Pokrycie sieci', value: '72%', desc: 'Wymaga optymalizacji', isAlert: true },
-                  { title: 'Emisja CO2', value: 'Wysoka', desc: 'Dużo starych pojazdów' },
-                  { title: 'Węzły integracyjne', value: '2', desc: 'Zbyt mało na wielkość miasta', isAlert: true },
-                  { title: 'Efektywność', value: '+25%', desc: 'Po wdrożeniu huba' }
-                ];
-                hourlyFlow = [
-                  { time: '08:00', flowCount: 400, delayMinutes: 3 },
-                  { time: '12:00', flowCount: 300, delayMinutes: 2 },
-                  { time: '16:00', flowCount: 450, delayMinutes: 4 },
-                  { time: '20:00', flowCount: 200, delayMinutes: 1 }
-                ];
-                zoneComparison = [
-                  { zone: 'System Niezintegrowany', passengers: 100, capacity: 100 },
-                  { zone: 'System Skoncentrowany', passengers: 150, capacity: 100 }
-                ];
-                report = `### 🤖 Diagnoza Modelu AI: Globalna koordynacja transportu publicznego
-Analiza strukturalna całego systemu w korelacji ze strefą **${zoneName}** wykazuje fragmentację usług transportowych.
-
-#### Główne Wyzwania:
-* Brak wspólnego biletu i synchronizacji rozkładów między koleją aglomeracyjną a komunikacją miejską.
-* Trasy autobusowe pełnią funkcję "od drzwi do drzwi", co niepotrzebnie wydłuża czas przejazdu przez całe miasto.
-
-#### Rekomendacje Wdrożeniowe:
-1.  **System Hub & Spoke**: Przebudowa siatki na model przesiadkowy z liniami szybkimi (magistralnymi) i dowozowymi.
-2.  **Węzły intermodalne**: Stworzenie punktów łączących rowery miejskie, hulajnogi, P&R oraz transport zbiorowy w jeden zintegrowany ekosystem.`;
-                break;
-            }
-
-            resolve({
-              kpis,
-              hourlyFlow,
-              zoneComparison,
-              report,
-              optionTitle
-            });
-          }, 500);
-        }, 500);
-      }, 500);
-    });
-  };
-
   const handleZoneSelect = (zone: WhiteSpotZone | Stop) => {
     setActiveZone(zone);
     setShowOptionsModal(true);
   };
 
-  const handleOptionSelect = (optionId: number) => {
+  const handleOptionSelect = async (optionId: number) => {
     if (!activeZone) return;
+    
+    // Zamykamy modal i pokazujemy kręciołek
     setShowOptionsModal(false);
     setIsAnalyzing(true);
     setAiResult(null);
+    setAnalysisProgress('Łączenie z silnikiem Gemini AI...');
 
-    mockAICall(optionId, activeZone.name, selectedDay).then((res) => {
-      setAiResult(res);
+    // Tłumaczymy dzień tygodnia z frontendu na czytelny tekst dla AI
+    const kontekst = selectedDay === 'monday' ? 'Poniedziałek (Szczyt poranny)' 
+                   : selectedDay === 'wednesday' ? 'Środa (Szczyt popołudniowy)' 
+                   : 'Sobota (Weekend)';
+
+    // Budujemy paczkę dla naszego backendu FastAPI
+    const payload = {
+      id_opcji: `opcja_${optionId}`,
+      kontekst_czasowy: kontekst,
+      id_plamy: 'id' in activeZone ? activeZone.id : undefined,
+      lat: activeZone.lat,
+      lng: activeZone.lng
+    };
+
+    try {
+      console.log("🚀 Wysyłam zapytanie do API:", payload);
+      
+      // Prawdziwy strzał do Twojego działającego API
+      const response = await fetch("http://localhost:8000/api/analiza/generuj", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) throw new Error(`Błąd serwera: ${response.status}`);
+
+      // Odbieramy gotowego JSON-a od Gemini
+      const aiData = await response.json();
+      console.log("✅ Raport AI odebrany!", aiData);
+
+      // Wstrzykujemy dane do interfejsu (zostawiając makiety wykresów dla pięknego dema)
+      setAiResult({
+        optionTitle: aiData.tytul_raportu || `Analiza AI`,
+        report: `### 🤖 Diagnoza Modelu AI\n${aiData.diagnoza_problemu}\n\n#### Rekomendacje Wdrożeniowe:\n${aiData.rekomendacja_dzialan}`,
+        kpis: aiData.dane_do_wykresu ? aiData.dane_do_wykresu.map((d: any) => ({
+          title: d.kategoria,
+          value: String(d.wartosc) + (d.kategoria.includes('%') ? '%' : ''),
+          desc: 'Wskazanie modelu',
+          isAlert: typeof d.wartosc === 'number' && d.wartosc > 50
+        })) : [],
+        hourlyFlow: [
+          { time: '07:00', flowCount: 250, delayMinutes: 12 },
+          { time: '08:00', flowCount: 520, delayMinutes: 25 },
+          { time: '14:00', flowCount: 380, delayMinutes: 15 },
+          { time: '15:00', flowCount: 620, delayMinutes: 10 }
+        ],
+        zoneComparison: [
+          { zone: 'Obecna sytuacja', passengers: 200, capacity: 150 },
+          { zone: 'Rekomendacja AI', passengers: 450, capacity: 500 }
+        ]
+      });
+
+    } catch (error) {
+      console.error("❌ Błąd podczas łączenia z AI:", error);
+      setAiResult({
+         optionTitle: "Błąd połączenia",
+         report: "Nie udało się połączyć z backendem. Upewnij się, że serwer FastAPI jest włączony na porcie 8000.",
+         kpis: [], hourlyFlow: [], zoneComparison: []
+      });
+    } finally {
       setIsAnalyzing(false);
-      // Scroll to result on mobile
+      // Przewijanie do wyniku
       setTimeout(() => {
         document.getElementById('ai-results-panel')?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
-    });
+    }
   };
 
   const primaryColor = '#10b981'; // emerald-500
