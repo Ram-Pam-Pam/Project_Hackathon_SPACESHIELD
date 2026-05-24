@@ -7,19 +7,22 @@ from typing import Optional
 # Zabezpieczenie importów przed brakiem bibliotek GIS na systemach Windows/lokalnych
 try:
     from utils.sat_fetcher import pobierz_wcs_geoportal
-except ImportError:
+except ImportError as e:
+    print(f"[CRITICAL INIT ERROR] Nie można zaimportować sat_fetcher: {e}")
     pobierz_wcs_geoportal = None
 
 try:
     from utils.transport_data import generuj_kafelek_i_json, polacz_wyniki_z_baza, _sanitize_gdf
-except ImportError:
+except ImportError as e:
+    print(f"[CRITICAL INIT ERROR] Nie można zaimportować transport_data: {e}")
     generuj_kafelek_i_json = None
     polacz_wyniki_z_baza = None
     _sanitize_gdf = None
 
 try:
     from utils.gemini_agent import analizuj_surowe_zdjecie, ekstrahuj_kluczowe_obiekty
-except ImportError:
+except ImportError as e:
+    print(f"[CRITICAL INIT ERROR] Nie można zaimportować gemini_agent: {e}")
     analizuj_surowe_zdjecie = None
     ekstrahuj_kluczowe_obiekty = None
 
