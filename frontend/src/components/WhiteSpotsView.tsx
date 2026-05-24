@@ -151,9 +151,6 @@ export default function WhiteSpotsView({
                    : 'Sobota (Weekend)';
 
     const payload = {
-      id_opcji: `opcja_${optionId}`,
-      kontekst_czasowy: kontekst,
-      id_plamy: 'id' in activeZone ? activeZone.id : undefined,
       lat: activeZone.lat,
       lng: activeZone.lng
     };
