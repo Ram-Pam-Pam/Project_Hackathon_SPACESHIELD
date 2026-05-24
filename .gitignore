@@ -18,7 +18,7 @@ ENV/
 
 # --- KLUCZOWE: Środowisko i Certyfikaty (Klucze API Gemini/Claude) ---
 # Absolutny zakaz wrzucania kluczy na GitHub!
-.env
+backend/.env
 .env.local
 .env.*.local
 *.env
