@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ActivePage, Stop, AnalysisTab } from '../types';
+import { ActivePage, Stop, AnalysisTab } from './types';
 import { STALOWA_WOLA_STOPS } from './data/stalowaWolaData';
 import Navbar from './components/Navbar';
 import MapMainView from './components/MapMainView';
@@ -64,7 +64,8 @@ export default function App() {
       {/* 3. Render Views dynamically based on activePage state */}
       <main className="flex-1 w-full flex flex-col" key={viewKey}>
         {activePage === 'map' && (
-          <div className="animate-fade-in-up flex-1 flex flex-col">
+          <div className="animate-fade-in-up w-full h-[calc(100vh-100px)] relative"> 
+    
             <MapMainView
               stops={STALOWA_WOLA_STOPS}
               onStopSelect={handleStopSelect}

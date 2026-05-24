@@ -1,5 +1,9 @@
+
+import mojNowyGeoJSON from '../data/dashboard.json'; 
+import przystankiGeoJSON from '../data/przystanki.json';
 import { Navigation, ChevronRight } from 'lucide-react';
 import maplibregl from 'maplibre-gl';
+// @ts-ignore
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Stop } from '../types';
 import { useEffect, useRef, useState } from 'react';
@@ -16,15 +20,39 @@ interface MapMockupProps {
   selectedStop?: Stop | null;
 }
 
-// Precise geographic coordinates (latitude, longitude) of locations in Stalowa Wola
-const STALOWA_WOLA_GPS: Record<string, { lat: number; lng: number }> = {
-  'stop-1': { lat: 50.59124, lng: 22.04639 }, // Rozwadów Rynek
-  'stop-2': { lat: 50.56942, lng: 22.05325 }, // Okulickiego - Rondo
-  'stop-3': { lat: 50.56580, lng: 22.06250 }, // KEN - Bloki
-  'stop-4': { lat: 50.58210, lng: 22.05200 }, // Staszica - Dworzec PKS
-  'stop-5': { lat: 50.55010, lng: 22.04890 }, // Przemysłowa - Huta Stalowa Wola
-  'stop-6': { lat: 50.56950, lng: 22.05780 }, // Aleje Jana Pawła II - Bazylika
-  'stop-7': { lat: 50.57460, lng: 22.04350 }  // Ofiar Katynia - Park
+interface DynamicStop {
+  id: string;
+  name: string;
+  intensity: 'high' | 'medium' | 'low' | string;
+  description: string;
+  lines: string[];
+  dailyPassengers: number;
+  trafficScore: number;
+  lng: number;
+  lat: number;
+  wsiadlo: number;
+  wysiadlo: number;
+}
+
+// 2. Przypisujemy typ : DynamicStop[] do naszej zmiennej
+const dynamicStops: DynamicStop[] = przystankiGeoJSON.features.map((feature: any) => ({
+  id: feature.properties.id,
+  name: feature.properties.name,
+  intensity: feature.properties.intensity, // 'high' | 'medium' | 'low'
+  description: feature.properties.description,
+  lines: feature.properties.lines || [],
+  dailyPassengers: feature.properties.flow || 0, 
+  wsiadlo: feature.properties.wsiadlo || 0,       // <-- DODANO
+  wysiadlo: feature.properties.wysiadlo || 0,     // <-- DODANO
+  trafficScore: feature.properties.trafficScore || 0,
+  lng: feature.geometry.coordinates[0],
+  lat: feature.geometry.coordinates[1],
+}));
+
+// Funkcja pomocnicza do pobierania współrzędnych przystanku na podstawie ID
+const getStopCoords = (id: string) => {
+  const stop = dynamicStops.find(s => s.id === id);
+  return stop ? { lng: stop.lng, lat: stop.lat } : null;
 };
 
 const getMapStyle = (isDark: boolean, activeLayer: 'standard' | 'bdot10k' | 'satellite' | 'populacja_h3'): any => {
@@ -53,7 +81,6 @@ const getMapStyle = (isDark: boolean, activeLayer: 'standard' | 'bdot10k' | 'sat
     };
   }
 
-  // Choose style URL based on selection & dark theme
   let tileUrl = 'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
   if (activeLayer === 'bdot10k') {
     tileUrl = 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
@@ -93,7 +120,6 @@ const getMapStyle = (isDark: boolean, activeLayer: 'standard' | 'bdot10k' | 'sat
   };
 };
 
-// Convert our H3 dataset to GeoJSON features
 const getH3GeoJSON = (): any => {
   const features = POPULATION_H3.map((item) => {
     try {
@@ -126,7 +152,6 @@ const getH3GeoJSON = (): any => {
 };
 
 export default function MapMockup({
-  stops,
   activeLayer,
   onStopClick,
   hoveredStopId,
@@ -138,8 +163,9 @@ export default function MapMockup({
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Record<string, maplibregl.Marker>>({});
 
-  // Smart responsive observer to detect changes to dark/light theme trigger
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const [selectedLine, setSelectedLine] = useState<string | null>(null);
+  
   const isDarkRef = useRef(isDark);
   const activeLayerRef = useRef(activeLayer);
 
@@ -163,9 +189,11 @@ export default function MapMockup({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    const initialCoords = selectedStop && STALOWA_WOLA_GPS[selectedStop.id]
-      ? STALOWA_WOLA_GPS[selectedStop.id]
-      : { lat: 50.570, lng: 22.053 };
+    let initialCoords = { lat: 50.570, lng: 22.053 }; // Domyślny środek mapy
+    if (selectedStop) {
+        const coords = getStopCoords(selectedStop.id);
+        if (coords) initialCoords = coords;
+    }
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
@@ -179,58 +207,21 @@ export default function MapMockup({
 
     mapInstanceRef.current = map;
 
-    // Add navigation controls
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
 
-    // Register style load event to overlay spatial GeoJSON bus lines
     map.on('style.load', () => {
+      // 1. Dodajemy Twoje prawdziwe dane GeoJSON dla linii
       map.addSource('transit-routes', {
         type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: [
-            // Line 1 (Green network)
-            {
-              type: 'Feature',
-              properties: { color: '#10b981', name: 'Linia Główna 1' },
-              geometry: {
-                type: 'LineString',
-                coordinates: [
-                  [22.04639, 50.59124],
-                  [22.04350, 50.57460],
-                  [22.05200, 50.58210],
-                  [22.05325, 50.56942],
-                  [22.05780, 50.56950],
-                  [22.06250, 50.56580],
-                  [22.04890, 50.55010],
-                ]
-              }
-            },
-            // Line 2 (Cyan network)
-            {
-              type: 'Feature',
-              properties: { color: '#06b6d4', name: 'Pętla Śródmiejska 2' },
-              geometry: {
-                type: 'LineString',
-                coordinates: [
-                  [22.05325, 50.56942],
-                  [22.04350, 50.57460],
-                  [22.04639, 50.59124],
-                  [22.05200, 50.58210],
-                  [22.05780, 50.56950],
-                  [22.05325, 50.56942],
-                ]
-              }
-            }
-          ]
-        }
+        data: mojNowyGeoJSON as any
       });
 
-      // Subtle drop shadow/contrast layer
+      // 2. Warstwa "cienia" (obwódki) dla linii
       map.addLayer({
         id: 'transit-lines-case',
         type: 'line',
         source: 'transit-routes',
+        filter: ['any', ['==', ['geometry-type'], 'LineString'], ['==', ['geometry-type'], 'MultiLineString']],
         layout: {
           'line-join': 'round',
           'line-cap': 'round'
@@ -242,29 +233,42 @@ export default function MapMockup({
         }
       });
 
-      // Main colored bus lines
+      // 3. Główny kolor linii trasy
       map.addLayer({
         id: 'transit-lines',
         type: 'line',
         source: 'transit-routes',
+        filter: ['any', ['==', ['geometry-type'], 'LineString'], ['==', ['geometry-type'], 'MultiLineString']],
         layout: {
           'line-join': 'round',
           'line-cap': 'round'
         },
-        paint: {
-          'line-color': ['get', 'color'],
-          'line-width': 3,
-          'line-opacity': 0.8
-        }
+       paint: {
+         // Domyślne kolory linii przed kliknięciem w dymek
+         'line-color': [
+            'match',
+            ['to-string', ['get', 'line']],
+            '1', '#ef4444',
+            '5', '#f59e0b',
+            '10', '#3b82f6',
+            'P', '#10b981',
+            '#0ea5e9' // domyślny
+          ],
+         'line-width': 4,
+         'line-opacity': 0.8
+       }
       });
 
-      // Insert 3D buildings layer beneath any symbol layer
       const layers = map.getStyle().layers;
       let labelLayerId;
       for (let i = 0; i < layers.length; i++) {
-        if (layers[i].type === 'symbol' && layers[i].layout && layers[i].layout['text-field']) {
-          labelLayerId = layers[i].id;
-          break;
+        const layer = layers[i];
+        if (layer.type === 'symbol') {
+          const symbolLayer = layer as maplibregl.SymbolLayerSpecification;
+          if (symbolLayer.layout && symbolLayer.layout['text-field']) {
+              labelLayerId = layer.id;
+              break;
+          }
         }
       }
 
@@ -287,32 +291,24 @@ export default function MapMockup({
                   'interpolate',
                   ['linear'],
                   ['get', 'render_height'],
-                  0,
-                  '#7dd3fc', // sky-300 (light blue)
-                  100,
-                  '#38bdf8', // sky-400
-                  300,
-                  '#0ea5e9'  // sky-500
+                  0, '#7dd3fc',
+                  100, '#38bdf8',
+                  300, '#0ea5e9'
                 ]
               : [
                   'interpolate',
                   ['linear'],
                   ['get', 'render_height'],
-                  0,
-                  'lightgray',
-                  200,
-                  'royalblue',
-                  400,
-                  'lightblue'
+                  0, 'lightgray',
+                  200, 'royalblue',
+                  400, 'lightblue'
                 ],
             'fill-extrusion-height': [
               'interpolate',
               ['linear'],
               ['zoom'],
-              13,
-              0,
-              16,
-              ['get', 'render_height']
+              13, 0,
+              16, ['get', 'render_height']
             ],
             'fill-extrusion-base': ['case',
               ['>=', ['get', 'zoom'], 16],
@@ -324,7 +320,6 @@ export default function MapMockup({
         labelLayerId
       );
 
-      // Add H3 population layer if activeLayer is 'populacja_h3'
       if (activeLayerRef.current === 'populacja_h3') {
         map.addSource('population-h3', {
           type: 'geojson',
@@ -350,7 +345,6 @@ export default function MapMockup({
           }
         }, labelLayerId);
 
-        // Crisp boundaries outline layer
         map.addLayer({
           id: 'population-h3-stroke',
           type: 'line',
@@ -361,7 +355,6 @@ export default function MapMockup({
           }
         }, labelLayerId);
 
-        // Tooltip popup handling
         let popup: maplibregl.Popup | null = null;
 
         map.on('mouseenter', 'population-h3-layer', (e) => {
@@ -390,7 +383,6 @@ export default function MapMockup({
           }
         });
       }
-
     });
 
     return () => {
@@ -404,20 +396,18 @@ export default function MapMockup({
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    // Remove existing markers
-    Object.values(markersRef.current).forEach((marker: any) => marker.remove());
-    markersRef.current = {};
+    const currentMarkers: maplibregl.Marker[] = [];
 
-    stops.forEach((stop) => {
+    dynamicStops.forEach((stop) => {
+      const coords = { lng: stop.lng, lat: stop.lat };
+
       const isHigh = stop.intensity === 'high';
       const isMedium = stop.intensity === 'medium';
-      const coords = STALOWA_WOLA_GPS[stop.id] || { lat: 50.5700, lng: 22.0500 };
       const isHovered = hoveredStopId === stop.id;
 
-      // Create a gorgeous custom HTML/CSS element for the map node
       const el = document.createElement('div');
       el.id = `map-stop-marker-${stop.id}`;
-      el.className = 'relative flex items-center justify-center cursor-pointer';
+      el.className = 'relative flex items-center justify-center cursor-pointer marker-container';
       el.style.width = '52px';
       el.style.height = '52px';
       el.style.transition = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)';
@@ -438,15 +428,13 @@ export default function MapMockup({
 
       if (isHovered) {
         el.style.transform = 'scale(1.3)';
-        pulseRingClass = `absolute w-12 h-12 rounded-full animate-pulse opacity-80 ${isHigh ? 'bg-rose-500/40' : isMedium ? 'bg-amber-500/35' : 'bg-emerald-400/30'
-          }`;
+        pulseRingClass = `absolute w-12 h-12 rounded-full animate-pulse opacity-80 ${isHigh ? 'bg-rose-500/40' : isMedium ? 'bg-amber-500/35' : 'bg-emerald-400/30'}`;
       }
 
       el.innerHTML = `
         <div class="absolute inset-0 flex items-center justify-center">
           ${pulseRingClass ? `<div class="${pulseRingClass}"></div>` : ''}
-          <div class="relative w-8 h-8 rounded-full ${ringColorClass} border border-white/5 flex items-center justify-center transition-transform duration-300 ${isHovered ? 'scale-120' : 'hover:scale-110'
-        }">
+          <div class="relative w-8 h-8 rounded-full ${ringColorClass} border border-white/5 flex items-center justify-center transition-transform duration-300 ${isHovered ? 'scale-120' : 'hover:scale-110'}">
             <div class="w-4 h-4 rounded-full ${baseColorClass} border border-white flex items-center justify-center shadow-lg">
               <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
             </div>
@@ -456,27 +444,37 @@ export default function MapMockup({
 
       el.addEventListener('mouseenter', () => setHoveredStopId(stop.id));
       el.addEventListener('mouseleave', () => setHoveredStopId(null));
+      
+      // Obsługa kliknięcia i popupu
       el.addEventListener('click', (e) => {
         e.stopPropagation();
-        
-        // Remove any open popups
+
         const popups = document.querySelectorAll('.maplibregl-popup');
         popups.forEach((p) => p.remove());
 
         const popupNode = document.createElement('div');
         popupNode.className = 'p-4 rounded-2xl bg-slate-900/95 dark:bg-slate-950/95 text-white border border-slate-700/50 shadow-2xl backdrop-blur-md min-w-[260px] max-w-[300px] animate-fade-in font-sans';
+        
+        // ZMODYFIKOWANY HTML DYMKA Z PRZYCISKAMI LINII:
         popupNode.innerHTML = `
           <div class="border-b border-slate-800 pb-2.5 mb-3 flex items-start justify-between">
             <div>
               <h4 class="font-extrabold text-sm text-emerald-400 leading-snug">${stop.name}</h4>
-              <p class="text-[10px] text-slate-400 font-semibold mt-0.5">${stop.street}</p>
             </div>
             <span class="text-[9px] font-mono font-bold bg-slate-800 px-2 py-0.5 rounded-full text-slate-300 ml-2 uppercase">${stop.intensity}</span>
           </div>
           <div class="space-y-2 text-[11px] mb-4">
             <div class="flex justify-between items-center">
-              <span class="text-slate-400 font-medium">Pasażerowie:</span>
-              <span class="font-extrabold font-mono text-emerald-300">${stop.dailyPassengers.toLocaleString()} / dobę</span>
+              <span class="text-slate-400 font-medium">Wsiadło (dobowo):</span>
+              <span class="font-extrabold font-mono text-emerald-400">+${stop.wsiadlo.toLocaleString()}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400 font-medium">Wysiadło (dobowo):</span>
+              <span class="font-extrabold font-mono text-rose-400">-${stop.wysiadlo.toLocaleString()}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400 font-medium">Całkowity ruch (flow):</span>
+              <span class="font-bold font-mono text-slate-200">${stop.dailyPassengers.toLocaleString()}</span>
             </div>
             <div class="flex justify-between items-center">
               <span class="text-slate-400 font-medium">Natężenie ruchu:</span>
@@ -485,7 +483,7 @@ export default function MapMockup({
             <div class="flex justify-between items-start">
               <span class="text-slate-400 font-medium shrink-0">Linie:</span>
               <div class="flex flex-wrap gap-1 justify-end max-w-[140px]">
-                ${stop.lines.map(line => `<span class="bg-cyan-500/10 text-cyan-400 border border-cyan-500/25 px-1 py-0.5 rounded-md font-mono text-[9px] font-bold">${line}</span>`).join('')}
+                ${stop.lines.map((line: string) => `<button class="stop-line-btn bg-cyan-500/10 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/25 px-1 py-0.5 rounded-md font-mono text-[9px] font-bold cursor-pointer transition-colors" data-line="${line}">${line}</button>`).join('')}
               </div>
             </div>
           </div>
@@ -499,18 +497,32 @@ export default function MapMockup({
           closeOnClick: true,
           maxWidth: '320px',
           anchor: 'bottom',
-          offset: [0, -12]
+          offset: [0, -12],
+          autoPan: false
         })
           .setLngLat([coords.lng, coords.lat])
           .setDOMContent(popupNode)
           .addTo(map);
 
-        // Bind click event for action button
+        // KASOWANIE ZAZNACZONEJ LINII PO ZAMKNIĘCIU DYMKA
+        newPopup.on('close', () => setSelectedLine(null));
+
+        // OBSŁUGA KLIKNIĘĆ W PRZYCISKI LINII W DYMKU
+        const lineButtons = popupNode.querySelectorAll('.stop-line-btn');
+        lineButtons.forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const clickedLine = btn.getAttribute('data-line');
+            // Jeśli klikniesz tę samą to się odznaczy, jeśli inną - zaznaczy się ta nowa
+            setSelectedLine(prev => prev === clickedLine ? null : clickedLine);
+          });
+        });
+
         const btn = popupNode.querySelector(`#popup-btn-${stop.id}`);
         if (btn) {
           btn.addEventListener('click', () => {
             newPopup.remove();
-            onStopClick(stop);
+            onStopClick(stop as unknown as Stop);
           });
         }
       });
@@ -519,21 +531,26 @@ export default function MapMockup({
         .setLngLat([coords.lng, coords.lat])
         .addTo(map);
 
+      currentMarkers.push(marker);
       markersRef.current[stop.id] = marker;
     });
-  }, [stops, hoveredStopId, isDark]);
+
+    return () => {
+      currentMarkers.forEach(m => m.remove());
+    };
+  }, [hoveredStopId, isDarkRef.current]);
 
   // Smooth slide and center camera when hovered stop changes
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !hoveredStopId) return;
 
-    const coords = STALOWA_WOLA_GPS[hoveredStopId];
+    const coords = getStopCoords(hoveredStopId);
     if (coords) {
       map.easeTo({
-        center: [coords.lng, coords.lat],
+       
         duration: 900,
-        zoom: Math.max(map.getZoom(), 13.5),
+        zoom: Math.max(map.getZoom(), 0),
       });
     }
   }, [hoveredStopId]);
@@ -543,17 +560,16 @@ export default function MapMockup({
     const map = mapInstanceRef.current;
     if (!map || !selectedStop) return;
 
-    const coords = STALOWA_WOLA_GPS[selectedStop.id];
+    const coords = getStopCoords(selectedStop.id);
     if (coords) {
       map.easeTo({
-        center: [coords.lng, coords.lat],
+        
         zoom: 16,
         duration: 1200
       });
     }
   }, [selectedStop]);
 
-  // Sync active style mode smoothly
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (map) {
@@ -561,28 +577,74 @@ export default function MapMockup({
     }
   }, [activeLayer, isDark]);
 
-  // Smoothly ease map pitch and bearing when isFlat changes
+  
+
+  // Efekt podświetlania JEDNEJ klikniętej linii na biało
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (map) {
-      map.easeTo({
-        pitch: isFlat ? 0 : 60,
-        bearing: isFlat ? 0 : -15,
-        duration: 900
-      });
+    if (!map || !map.isStyleLoaded()) return;
+
+    // Standardowe kolory z palety
+    const defaultColors = [
+      'match',
+      ['to-string', ['get', 'line']],
+    
+      '#0ea5e9' // błękitny domyślny
+    ];
+
+    try {
+      if (selectedLine) {
+        // --- STAN: KLIKNIĘTO W KONKRETNĄ LINIĘ W DYMKU ---
+        map.setPaintProperty('transit-lines', 'line-color', [
+          'case',
+          ['==', ['to-string', ['get', 'line']], selectedLine], '#ffffff', // Zaznaczona jest na biało
+          isDarkRef.current ? '#1e293b' : '#e2e8f0'                        // Reszta mocno wygaszona do szarości
+        ]);
+
+        map.setPaintProperty('transit-lines', 'line-width', [
+          'case',
+          ['==', ['to-string', ['get', 'line']], selectedLine], 6, // Gruba biała linia
+          2 // Cienkie szare linie
+        ]);
+
+        map.setPaintProperty('transit-lines', 'line-opacity', [
+          'case',
+          ['==', ['to-string', ['get', 'line']], selectedLine], 1.0,
+          0.15 // Niemal całkowite wygaszenie innych tras
+        ]);
+
+        if (map.getLayer('transit-lines-case')) {
+          map.setPaintProperty('transit-lines-case', 'line-opacity', [
+            'case',
+            ['==', ['to-string', ['get', 'line']], selectedLine], 0.8,
+            0.0 // Usuwamy obwódkę wygaszonych tras dla czystszego widoku
+          ]);
+        }
+
+      } else {
+        // --- STAN: DOMYŚLNY (BRAK ZAZNACZENIA) ---
+        // Wszystko wraca do normy z oryginalnymi kolorami
+        map.setPaintProperty('transit-lines', 'line-color', defaultColors); 
+        map.setPaintProperty('transit-lines', 'line-width', 4);
+        map.setPaintProperty('transit-lines', 'line-opacity', 0.8);
+        
+        if (map.getLayer('transit-lines-case')) {
+          map.setPaintProperty('transit-lines-case', 'line-opacity', 0.75);
+        }
+      }
+    } catch (e) {
+      console.warn("Warstwa linii jeszcze nie istnieje lub błąd MapLibre", e);
     }
-  }, [isFlat]);
+  }, [selectedLine]); // Nasłuchujemy teraz tylko zmian klikniętej linii!
 
   return (
     <div className="relative h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 transition-all dark:border-slate-800 dark:bg-slate-950 shadow-lg">
-      {/* Absolute base full screen Map container */}
       <div
         ref={mapContainerRef}
         className="h-full w-full absolute inset-0 z-0"
         id="stalowa-wola-vector-map"
       />
 
-      {/* Floating HUD Panel 1: Location Stats */}
       <div className="absolute top-4 left-4 z-10 flex flex-col space-y-2 pointer-events-none">
         <div className="flex items-center space-x-2 rounded-xl border border-white/10 bg-slate-950/80 p-2.5 shadow-2xl backdrop-blur-xl">
           <Navigation className="h-4 w-4 text-emerald-400 animate-[spin_8s_linear_infinite]" />
@@ -593,7 +655,6 @@ export default function MapMockup({
         </div>
       </div>
 
-      {/* Floating HUD Panel 2: Density Summary Categories */}
       <div className="absolute right-4 top-4 z-10 hidden sm:flex flex-col space-y-1.5 rounded-xl border border-white/10 bg-slate-950/80 p-3 shadow-2xl backdrop-blur-xl pointer-events-none">
         <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
           Obciążenie taboru
@@ -614,11 +675,10 @@ export default function MapMockup({
         </div>
       </div>
 
-      {/* Real-time Dynamic Status/Details Box shown at bottom when hovering stops */}
       {hoveredStopId && (
         <div className="absolute bottom-4 left-4 right-4 z-10 rounded-2xl border border-white/10 bg-slate-950/90 p-4 shadow-2xl backdrop-blur-xl transition-all duration-300 sm:left-4 sm:right-auto sm:max-w-sm animate-fade-in">
           {(() => {
-            const stop = stops.find((s) => s.id === hoveredStopId);
+            const stop = dynamicStops.find((s) => s.id === hoveredStopId);
             if (!stop) return null;
             return (
               <div id={`hover-card-${stop.id}`}>
@@ -644,7 +704,7 @@ export default function MapMockup({
                   <span className="text-slate-400">
                     Pasażerowie: <strong className="font-mono text-slate-200 font-bold">{stop.dailyPassengers.toLocaleString()} / dobę</strong>
                   </span>
-                  <span className="flex items-center font-bold text-emerald-400 cursor-pointer hover:text-emerald-300 transition-colors" onClick={() => onStopClick(stop)}>
+                  <span className="flex items-center font-bold text-emerald-400 cursor-pointer hover:text-emerald-300 transition-colors" onClick={() => onStopClick(stop as unknown as Stop)}>
                     Analiza <ChevronRight className="ml-0.5 h-3 w-3" />
                   </span>
                 </div>
@@ -656,3 +716,4 @@ export default function MapMockup({
     </div>
   );
 }
+
