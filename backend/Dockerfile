@@ -1,5 +1,5 @@
 # Używamy oficjalnego, lekkiego obrazu Pythona
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # Ustawiamy katalog roboczy wewnątrz kontenera
 WORKDIR /app
