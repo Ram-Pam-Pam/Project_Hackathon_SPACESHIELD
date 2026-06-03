@@ -11,15 +11,19 @@ async def testuj_wizje_gemini():
     """
     # Szukamy folderu ze zdjęciami
     IMAGE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "images")
-    
-    # Pobieramy pierwszy plik .jpg, jaki tam leży
-    pliki = [f for f in os.listdir(IMAGE_DIR) if f.endswith(".jpg")]
-    
+
+    # Pobieramy pełne ścieżki do plików, by móc sprawdzić ich metadane
+    pliki = [os.path.join(IMAGE_DIR, f) for f in os.listdir(IMAGE_DIR) if f.endswith(".jpg")]
+
     if not pliki:
         return {"błąd": "Najpierw pobierz jakieś zdjęcie mapboxem!"}
-        
-    # Bierzemy pierwsze zdjęcie z brzegu
-    pelna_sciezka = os.path.join(IMAGE_DIR, pliki[0])
+
+    # Sortujemy pliki od najnowszego do najstarszego
+    pliki.sort(key=os.path.getmtime, reverse=True)
+
+    pelna_sciezka = pliki[0]
+    nazwa_pliku = os.path.basename(pelna_sciezka)
+    
     
     # Uruchamiamy AI
     wynik_analizy = analizuj_surowe_zdjecie(pelna_sciezka)
